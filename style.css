@@ -1,0 +1,59 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  scroll-behavior: smooth;
+}
+
+.hero {
+  /* background: url('./Assets/Images/pexels-ian-panelo-11518779.jpg') no-repeat center center/cover; */
+  background: url('./Assets/Images/triangle_back.jpeg') no-repeat center center/cover;
+  background-size:stretch;
+  position: relative;
+  color: white;
+  padding: 120px 20px;
+  text-align: center;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 0;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+.services, .pricing, .contact {
+  padding: 80px 20px;
+}
+
+.service-icon {
+  font-size: 40px;
+  color: #6c63ff;
+}
+
+.pricing-card {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  transition: 0.3s;
+  background: white;
+}
+
+.pricing-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+footer {
+  background: #1f1c2c;
+  color: white;
+  text-align: center;
+  padding: 30px 10px;
+}
+
+textarea, input {
+  background-color: #f8f9fa;
+}

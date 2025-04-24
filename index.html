@@ -3,75 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PixelCrafter Studio</title>
+  <title>The Triangle Solutions</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      scroll-behavior: smooth;
-    }
-
-    .hero {
-      background: url('https://images.unsplash.com/photo-1551817958-20204b9ec7b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover;
-      position: relative;
-      color: white;
-      padding: 120px 20px;
-      text-align: center;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 0;
-    }
-
-    .hero .container {
-      position: relative;
-      z-index: 1;
-    }
-
-    .services, .pricing, .contact {
-      padding: 80px 20px;
-    }
-
-    .service-icon {
-      font-size: 40px;
-      color: #6c63ff;
-    }
-
-    .pricing-card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      transition: 0.3s;
-      background: white;
-    }
-
-    .pricing-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-
-    footer {
-      background: #1f1c2c;
-      color: white;
-      text-align: center;
-      padding: 30px 10px;
-    }
-
-    textarea, input {
-      background-color: #f8f9fa;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <!-- Hero Section -->
   <section class="hero" id="home">
     <div class="container" data-aos="fade-up">
-      <h1 class="display-4 fw-bold">PixelCrafter Studio</h1>
+      <h1 class="display-4 fw-bold">The Triangle <br/>Solutions</h1>
       <p class="lead">Crafting sleek websites and powerful web applications</p>
       <a href="#contact" class="btn btn-light btn-lg mt-4">Let's Build Something</a>
     </div>
@@ -93,10 +35,10 @@
           <p>From dashboards to SaaS products, we create scalable web apps with great UX.</p>
         </div>
         <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
-          <div class="service-icon mb-3">🚀</div>
-          <h5>Speed Optimization</h5>
-          <p>Boost your existing website's performance and loading speed with our optimization service.</p>
-        </div>
+          <div class="service-icon mb-3">🔌</div>
+          <h5>API Development</h5>
+          <p>Design and build robust APIs tailored to your business needs for seamless integration and scalability.</p>
+        </div>        
       </div>
     </div>
   </section>
@@ -109,7 +51,7 @@
         <div class="col-md-4" data-aos="flip-left">
           <div class="pricing-card p-4">
             <h4>Starter Site</h4>
-            <p class="display-6">$499</p>
+            <p class="display-6">₹25,000</p>
             <ul class="list-unstyled">
               <li>✔️ 1-3 Pages</li>
               <li>✔️ Responsive Design</li>
@@ -122,7 +64,7 @@
         <div class="col-md-4" data-aos="flip-up" data-aos-delay="100">
           <div class="pricing-card p-4 border-primary border-2">
             <h4>Business Site</h4>
-            <p class="display-6">$999</p>
+            <p class="display-6">₹30,000</p>
             <ul class="list-unstyled">
               <li>✔️ 5-8 Pages</li>
               <li>✔️ Custom Features</li>
@@ -135,7 +77,7 @@
         <div class="col-md-4" data-aos="flip-right" data-aos-delay="200">
           <div class="pricing-card p-4">
             <h4>Web App</h4>
-            <p class="display-6">From $1999</p>
+            <p class="display-6">From ₹45,000</p>
             <ul class="list-unstyled">
               <li>✔️ Dynamic Features</li>
               <li>✔️ Backend Integration</li>
@@ -150,37 +92,66 @@
   </section>
 
   <!-- Contact Section -->
-  <section class="contact" id="contact">
-    <div class="container text-center">
-      <h2 class="mb-5" data-aos="fade-up">Let's Work Together</h2>
-      <p class="mb-4" data-aos="fade-up" data-aos-delay="100">Tell us about your project and we'll reach out soon!</p>
-      <form action="https://formsubmit.co/mkursijadeveloper@gmail.com" method="POST" class="row g-3 justify-content-center" data-aos="fade-up" data-aos-delay="200">
-        <!-- Disable spam (honeypot field) -->
-        <input type="hidden" name="_captcha" value="false">
-        
-        <!-- Optional: Redirect after submission -->
-        <input type="hidden" name="_next" value="https://yourdomain.com/thank-you.html">
-      
-        <div class="col-md-4">
-          <input type="text" name="name" class="form-control" placeholder="Your Name" required>
-        </div>
-        <div class="col-md-4">
-          <input type="email" name="email" class="form-control" placeholder="Your Email" required>
-        </div>
-        <div class="col-md-8">
-          <textarea name="message" class="form-control" rows="4" placeholder="Your Message" required></textarea>
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
-        </div>
-      </form>
-      
-    </div>
-  </section>
+<section class="contact" id="contact">
+  <div class="container text-center">
+    <h2 class="mb-5" data-aos="fade-up">Let's Work Together</h2>
+    <p class="mb-4" data-aos="fade-up" data-aos-delay="100">Tell us about your project and we'll reach out soon!</p>
+
+    <form action="https://formsubmit.co/mkursijadeveloper@gmail.com" method="POST"
+      class="row g-3 justify-content-center" data-aos="fade-up" data-aos-delay="200" onsubmit="return validateForm()">
+
+      <!-- Disable spam (honeypot field) -->
+      <input type="hidden" name="_captcha" value="false">
+      <!-- Optional: Redirect after submission -->
+      <input type="hidden" name="_next" value="https://yourdomain.com/thank-you.html">
+
+      <div class="col-md-4">
+        <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" required>
+      </div>
+      <div class="col-md-4">
+        <input type="email" name="email" class="form-control" placeholder="Your Email" required>
+      </div>
+      <div class="col-md-6">
+        <input type="text" id="phone" name="phone" class="form-control" placeholder="Your Phone Number" required>
+      </div>
+      <div class="col-md-7">
+        <textarea name="message" class="form-control" rows="4" placeholder="Your Message" required></textarea>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+      </div>
+    </form>
+
+  </div>
+</section>
+
+<!-- JavaScript validation -->
+<script>
+  function validateForm() {
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const phoneRegex = /^[0-9]+$/;
+
+    if (!nameRegex.test(name)) {
+      alert('Name should only contain letters and spaces (no numbers or special characters).');
+      return false;
+    }
+
+    if (!phoneRegex.test(phone)) {
+      alert('Phone number should only contain digits (no letters or symbols).');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
 
   <!-- Footer -->
   <footer>
-    <p>&copy; 2025 PixelCrafter Studio. All rights reserved.</p>
+    <p>&copy; 2025 The Triangle Solutions. All rights reserved.</p>
   </footer>
 
   <!-- Scripts -->
