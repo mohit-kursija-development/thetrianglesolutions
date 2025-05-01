@@ -7,13 +7,41 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Impor Jquery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="./main.js"></script>
 </head>
 <body>
 
+  <!-- Navigation Bar -->
+<section class="top-bar">
+  <nav class="navbar navbar-expand-lg modified-nav">
+    <div class="container">
+      <!-- Add a logo -->
+      <a class="" href="#home"><img src="./Assets/Images/logo-removebg-preview.png" alt="Logo" width="50"  class="d-inline-block align-text-top"></a>
+      <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span> -->
+      <a class="navbar-brand" href="#home">The Triangle Solutions</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item mx-3"><a class="nav-link" href="#home">Home</a></li>
+          <li class="nav-item mx-3"><a class="nav-link" href="#services">Services</a></li>
+          <li class="nav-item mx-3"><a class="nav-link" href="#pricing">Pricing</a></li>
+          <li class="nav-item mx-3"><a class="nav-link" href="#contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</section>
+
   <!-- Hero Section -->
   <section class="hero" id="home">
+    <img src="./Assets//Images/logo-removebg-preview.png" alt="Logo" class="logo-big" data-aos="fade-up" data-aos-delay="100">
     <div class="container" data-aos="fade-up">
-      <h1 class="display-4 fw-bold">The Triangle <br/>Solutions</h1>
+      <h1 class="display-4 fw-bold">The Triangle Solutions</h1>
       <p class="lead">Crafting sleek websites and powerful web applications</p>
       <a href="#contact" class="btn btn-light btn-lg mt-4">Let's Build Something</a>
     </div>
@@ -94,64 +122,64 @@
   <!-- Contact Section -->
 <section class="contact" id="contact">
   <div class="container text-center">
-    <h2 class="mb-5" data-aos="fade-up">Let's Work Together</h2>
-    <p class="mb-4" data-aos="fade-up" data-aos-delay="100">Tell us about your project and we'll reach out soon!</p>
-
-    <form action="https://formsubmit.co/mkursijadeveloper@gmail.com" method="POST"
-      class="row g-3 justify-content-center" data-aos="fade-up" data-aos-delay="200" onsubmit="return validateForm()">
+    
+    <!-- <p class="mb-4" data-aos="fade-up" data-aos-delay="100">Tell us about your project and we'll reach out soon!</p> -->
+  </div>
+</section>
+<section>
+  <div class="container text-center my-4">
+    <h2 class="mb-5 work" data-aos="fade-up">Let's Work Together</h2>
+    <!-- Validate form using JS -->
+    <form action="#" method="POST"
+      class="row justify-content-center" data-aos="fade-up" data-aos-delay="200" id="myForm">
 
       <!-- Disable spam (honeypot field) -->
       <input type="hidden" name="_captcha" value="false">
       <!-- Optional: Redirect after submission -->
       <input type="hidden" name="_next" value="https://yourdomain.com/thank-you.html">
 
-      <div class="col-md-4">
-        <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" required>
+      <div class="col-md-7 my-2">
+        <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" >
+        
       </div>
-      <div class="col-md-4">
-        <input type="email" name="email" class="form-control" placeholder="Your Email" required>
+      <div class="col-md-7 my-2">
+        <input type="email" name="email" id="email" class="form-control" placeholder="Your Email" >
       </div>
-      <div class="col-md-6">
-        <input type="text" id="phone" name="phone" class="form-control" placeholder="Your Phone Number" required>
+      <div class="col-md-7 my-2">
+        <input type="number" id="phone" name="phone" class="form-control" placeholder="Your Phone Number" >
       </div>
-      <div class="col-md-7">
-        <textarea name="message" class="form-control" rows="4" placeholder="Your Message" required></textarea>
+      <!-- Create dropdown to input starter site, business site, web app  -->
+      <div class="col-md-7 my-2">
+        <select name="service" id="service" class="form-select" aria-label="Default select example" required>
+          <option value="" selected>Select Service</option>
+          <option value="starter">Starter Site</option>
+          <option value="business">Business Site</option>
+          <option value="webapp">Web App</option>
+          <option value="not_sure">Not Sure</option>
+        </select>
+
       </div>
-      <div class="col-12">
+      <div class="col-md-7 my-2">
+        <textarea name="message" id="message" class="form-control" rows="4" placeholder="Your Message" ></textarea>
+      </div>
+      <!-- Create a own modal for sucess message -->
+      <div id="success" class="mt-2 col-md-7 alert alert-success ">
+        <strong>Success!</strong> Your message has been sent successfully. We will get back to you soon.
+      </div>
+
+
+      <div id="allError" class="mt-2 col-md-7 alert alert-danger "></div>
+      <div class="col-12 mt-3 mb-5">
         <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
       </div>
     </form>
-
   </div>
 </section>
-
-<!-- JavaScript validation -->
-<script>
-  function validateForm() {
-    const name = document.getElementById('name').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-
-    const nameRegex = /^[A-Za-z\s]+$/;
-    const phoneRegex = /^[0-9]+$/;
-
-    if (!nameRegex.test(name)) {
-      alert('Name should only contain letters and spaces (no numbers or special characters).');
-      return false;
-    }
-
-    if (!phoneRegex.test(phone)) {
-      alert('Phone number should only contain digits (no letters or symbols).');
-      return false;
-    }
-
-    return true;
-  }
-</script>
-
-
   <!-- Footer -->
   <footer>
-    <p>&copy; 2025 The Triangle Solutions. All rights reserved.</p>
+    <!-- make year dynamic using js -->
+    <img src="./Assets/Images/logo-removebg-preview.png" alt="Logo"  class="logo-big" data-aos="fade-up" data-aos-delay="100">
+    <p>&copy; <span id="year"></span> The Triangle Solutions</p>
   </footer>
 
   <!-- Scripts -->
@@ -160,5 +188,6 @@
   <script>
     AOS.init({ duration: 1000, once: true });
   </script>
-</body>
+
+  </body>
 </html>

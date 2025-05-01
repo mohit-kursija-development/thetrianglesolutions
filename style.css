@@ -11,6 +11,7 @@ body {
   color: white;
   padding: 120px 20px;
   text-align: center;
+ 
 }
 
 .hero::before {
@@ -56,4 +57,86 @@ footer {
 
 textarea, input {
   background-color: #f8f9fa;
+}
+
+#allError{
+  display: none;
+  font-size: 12px;
+  max-width: 500px;
+}
+
+.contact{
+  background-image: url('./Assets/Images/handshake.JPG');
+  background-size: auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.9; 
+  padding: 80px 20px;
+  color: rgb(17, 0, 255);
+  background-color: rgba(255, 255, 255, 0.3);
+  height: 200px;
+  /* width: 800px; */
+}
+
+.modified-nav{
+  /* background-color: rgba(255, 255, 255, 0.1); */
+  color: darkblue !important;
+}
+.navbar-brand , .navbar-nav .nav-link{
+  color: darkblue !important;
+  /* font-weight: bold; */
+  font-weight: 400;
+  text-align: center;
+  font-size: 1.4rem;
+  /* transition: color 0.3s ease; */
+}
+.logo-big{
+  width: 100%;
+  height: auto;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.success{
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+/* CSS for tab and mobile */
+@media (max-width: 768px) {
+  .hero {
+    padding: 80px 20px;
+  }
+  
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .hero p {
+    font-size: 1.2rem;
+  }
+  
+  .services, .pricing, .contact {
+    padding: 40px 20px;
+  }
+  
+  .service-icon {
+    font-size: 30px;
+  }
+  
+  .pricing-card {
+    margin-bottom: 20px;
+  }
+  .modified-nav{
+    background-color: rgba(255, 255, 255, 1);
+    color: darkblue !important;
+  }
+  .navbar-brand , .navbar-nav .nav-link{
+    color: darkblue !important;
+  }
+  
+
 }
