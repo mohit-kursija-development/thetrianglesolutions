@@ -8,12 +8,28 @@ $(document).ready(function() {
     }
 
     $('#success').fadeIn();
-  
+    // Submit the form using AJAX
+    $.ajax({
+      url: 'https://formsubmit.co/thetrianglesolutions1@gmail.com', // Replace with your server URL
+      type: 'POST',
+      data: $(this).serialize(),
+      success: function(response) {
+        $('#success').fadeIn(); // Show success message
+
+      },
+      error: function(xhr, status, error) {
+        console.error('Error submitting form:', error);
+        $('#allError').fadeIn(); // Show error message
+      }
+    });
+
     // Wait 3 seconds, then submit the form
     setTimeout(function() {
       console.log('Form submitted!');
       $('#myForm').off('submit'); // Remove this submit handler
       $('#myForm')[0].submit(); // ✅ Manual submission
+      
+      location.reload(); 
     }, 2000);
   });
   
