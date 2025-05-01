@@ -14,7 +14,7 @@ $(document).ready(function() {
       console.log('Form submitted!');
       $('#myForm').off('submit'); // Remove this submit handler
       $('#myForm')[0].submit(); // ✅ Manual submission
-    }, 3000);
+    }, 2000);
   });
   
   // console.log('Document is ready!');
