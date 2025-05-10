@@ -105,6 +105,28 @@ textarea, input {
   margin-top: 10px;
 }
 
+.vacation-img{
+  max-width: 100%;
+  border-radius: 30px;
+}
+.highlight{
+  background-color: lightyellow;
+  color: red;
+}
+
+.services, .contact,.contact-form{
+  background-color: rgb(245, 245, 245);
+}
+.world-para, .world-head{
+  text-align: right;
+}
+.world-head, .monday{
+  font-size: 2rem;
+}
+/* .world-para{
+  font-size: 1.5rem;
+} */
+
 /* CSS for tab and mobile */
 @media (max-width: 768px) {
   .hero {
@@ -137,6 +159,9 @@ textarea, input {
   .navbar-brand , .navbar-nav .nav-link{
     color: darkblue !important;
   }
+  .world-head, .monday{
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 368px) {
@@ -146,5 +171,8 @@ textarea, input {
   .nav-tts{
     font-size: 1.2rem;
   }
-
+  
+  .world-head, .monday{
+    font-size: 1.5rem;
+  }
 }
