@@ -114,7 +114,7 @@ textarea, input {
   color: red;
 }
 
-.services, .contact, .contact-form, .our-projects{
+.services, .our-projects{
   background-color: rgb(245, 245, 245);
 }
 .world-para, .world-head{
@@ -140,6 +140,37 @@ textarea, input {
 .thumb-link{
   text-decoration: none;
 }
+.offer{
+  background-color: #fd5c5a;
+  color: white;
+}
+.lto{
+  text-align: center;
+  font-size: 2rem;
+}
+.shock-img{
+  /* width: 100%; */
+  max-height: 300px;
+}
+.btwn-para{
+  margin-bottom: 5px;
+  text-align: right;
+  font-size: 1.5rem;
+}
+.flat{
+  font-size: 2rem;
+  /* background-color: lightyellow; */
+  text-align: right;
+  font-weight: bolder;
+  color: yellow;
+  margin-bottom: 5px;
+}
+.register-btn{
+  margin: 20px 0px;
+  text-align: center;
+  width: 300px;
+}
+
 
 /* CSS for tab and mobile */
 @media (max-width: 768px) {
@@ -180,6 +211,19 @@ textarea, input {
   .thumbnail{
     max-height: 130px;
   }
+  .register-btn{
+    width: 100%;
+  }
+  .shock-img{
+    /* width: 100%; */
+    max-height: 250px;
+  }
+  .btwn-para{
+    font-size: 1.2rem;
+  }
+  .flat{
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 368px) {
@@ -195,5 +239,12 @@ textarea, input {
   }
   .thumbnail{
     max-height: 130px;
+  }
+  .shock-img{
+    /* width: 100%; */
+    max-height: 300px;
+  }
+  .register-btn{
+    width: 100%;
   }
 }
