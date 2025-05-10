@@ -51,7 +51,7 @@ function validateForm() {
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
-  const service = document.getElementById('service').value.trim();
+  // const service = document.getElementById('service').value.trim();
   const message = document.getElementById('message').value.trim();
 
   const nameRegex = /^[A-Za-z\s]+$/;
@@ -76,11 +76,11 @@ function validateForm() {
     allError.style.display = 'block'; // Show the error message
     return false;
   }
-  if (service === '') {
-    allError.textContent = 'Please select a service.';
-    allError.style.display = 'block'; // Show the error message
-    return false;
-  }
+  // if (service === '') {
+  //   allError.textContent = 'Please select a service.';
+  //   allError.style.display = 'block'; // Show the error message
+  //   return false;
+  // }
   // Check if message contains only letters, numbers, spaces, and punctuation
   const messageRegex = /^[A-Za-z0-9\s.,!?'"-]+$/;
   if (!messageRegex.test(message) || message.length < 10) {

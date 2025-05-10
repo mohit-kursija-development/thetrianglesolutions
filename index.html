@@ -79,23 +79,23 @@
 
   
   <section class="why-website my-4" id="why-website">
-    <h2 class="text-center mb-5">Why do you need a website?</h2>
+    <h2 class="text-center mb-5" data-aos="fade-up">Why do you need a website?</h2>
     <div class="container">
       <div class="row">
-        <div class="col-md-4 col-6">
+        <div class="col-md-4 col-6" data-aos="flip-right" data-aos-delay="200">
           <img src="./Assets/Images/vacation enjoy.jpg" class="vacation-img" alt="Image showing person on vacation">
         </div>
-        <div class="col-md-8 col-6 d-flex justify-content-center  flex-column">
+        <div class="col-md-8 col-6 d-flex justify-content-center  flex-column" data-aos="flip-left" data-aos-delay="200">
           <h3 class="monday">This could be you on a <span class="highlight">Monday!!</span></h3>
           <p class="mt-3">Enjoy your vacation while your website is working for you taking the orders.</p>
         </div>
       </div>
       <div class="row my-4">
-        <div class="col-md-8 col-6  d-flex justify-content-center  flex-column">
+        <div class="col-md-8 col-6 d-flex justify-content-center flex-column" data-aos="flip-left" data-aos-delay="200">
           <h3 class="world-head">World is in your hands.</h3>
           <p class="mt-3 world-para">A website enables global presence and builds trust among customers.</p>
         </div>
-        <div class="col-md-4 col-6">
+        <div class="col-md-4 col-6" data-aos="flip-left" data-aos-delay="200">
           <img src="./Assets/Images/world in hands.jpg" class="vacation-img" alt="Image showing globe in hand">
         </div>
       </div>
@@ -150,60 +150,90 @@
     </div>
   </section> -->
 
-  <!-- Contact Section -->
+  <section class="our-projects my-4">
+    <div class="container py-3">
+      <h2 class="our-head mt-4 mb-4">Our Projects</h2>
+      <div class="row">
+      <div class="col-6 col-md-3 d-flex flex-column" data-aos="flip-up">
+        <a href="https://bkdiagnostic.com" class="thumb-link" target="_blank" rel="noopener noreferrer">
+          <img src="./Assets/Images/bk_logo.png" class="thumbnail" alt="BK Diagnostic Thumbnail">
+          <p class="thumb-para">B.K. Diagnostic Center</p> 
+        </a>
+      </div>
+      <div class="col-6 col-md-3 d-flex flex-column" data-aos="flip-up">
+        <a href="https://mamtasoapworks.com" class="thumb-link" target="_blank" rel="noopener noreferrer">
+          <img src="./Assets/Images/mamta_soap_logo.png" class="thumbnail" alt="Mamta Soap Thumbnail">
+          <p class="thumb-para">Mamta Soap Center</p> 
+        </a>
+      </div>
+      <div class="col-6 col-md-3 d-flex flex-column" data-aos="flip-up">
+        <a href="https://rajuenterprise.in" class="thumb-link" target="_blank" rel="noopener noreferrer">
+          <div class="d-flex justify-content-center">
+          <img src="./Assets/Images/raju_logo.png" class="thumbnail" alt="Raju Enterprises Thumbnail">
+          </div>
+          <p class="thumb-para">Raju Enterprises</p> 
+        </a>
+      </div>
+      <div class="col-6 col-md-3 d-flex flex-column" data-aos="flip-up">
+        <img src="./Assets/Images/trendy_logo.png" class="thumbnail" alt="Trendy Look Thumbnail">
+        <p class="thumb-para">Trendy Look (Coming Soon)</p> 
+      </div>
+      </div>
+    </div>
+  </section>
 
 
-<section class="contact-form">
-  <div class="container text-center my-4">
-    <div class="contact" id="contact"></div>
-    <h2 class="mb-5 work" data-aos="fade-up">Let's Work Together</h2>
-  
-    <!-- Validate form using JS -->
-    <form action="#" method="POST"
-      class="row justify-content-center" data-aos="fade-up" data-aos-delay="200" id="myForm">
+  <section class="contact-form">
+    <div class="container text-center mt-4">
+      <div class="contact" id="contact"></div>
+      <h2 class="mb-5 work" data-aos="fade-up">Let's Work Together</h2>
+    
+      <!-- Validate form using JS -->
+      <form action="#" method="POST"
+        class="row justify-content-center" data-aos="fade-up" data-aos-delay="200" id="myForm">
 
-      <!-- Disable spam (honeypot field) -->
-      <input type="hidden" name="_captcha" value="false">
-      <!-- Optional: Redirect after submission -->
-      <input type="hidden" name="_next" value="https://yourdomain.com/thank-you.html">
+        <!-- Disable spam (honeypot field) -->
+        <input type="hidden" name="_captcha" value="false">
+        <!-- Optional: Redirect after submission -->
+        <input type="hidden" name="_next" value="https://yourdomain.com/thank-you.html">
 
-      <div class="col-md-7 my-2">
-        <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" >
-        
-      </div>
-      <div class="col-md-7 my-2">
-        <input type="email" name="email" id="email" class="form-control" placeholder="Your Email" >
-      </div>
-      <div class="col-md-7 my-2">
-        <input type="number" id="phone" name="phone" class="form-control" placeholder="Your Phone Number" >
-      </div>
-      <!-- Create dropdown to input starter site, business site, web app  -->
-      <div class="col-md-7 my-2">
-        <select name="service" id="service" class="form-select" aria-label="Default select example" required>
-          <option value="" selected>Select Service</option>
-          <option value="starter">Starter Site</option>
-          <option value="business">Business Site</option>
-          <option value="webapp">Web App</option>
-          <option value="not_sure">Not Sure</option>
-        </select>
+        <div class="col-md-7 my-2">
+          <input type="text" id="name" name="name" class="form-control" placeholder="Your Name" >
+          
+        </div>
+        <div class="col-md-7 my-2">
+          <input type="email" name="email" id="email" class="form-control" placeholder="Your Email" >
+        </div>
+        <div class="col-md-7 my-2">
+          <input type="number" id="phone" name="phone" class="form-control" placeholder="Your Phone Number" >
+        </div>
+        <!-- Create dropdown to input starter site, business site, web app  -->
+        <!-- <div class="col-md-7 my-2">
+          <select name="service" id="service" class="form-select" aria-label="Default select example" required>
+            <option value="" selected>Select Service</option>
+            <option value="starter">Starter Site</option>
+            <option value="business">Business Site</option>
+            <option value="webapp">Web App</option>
+            <option value="not_sure">Not Sure</option>
+          </select>
 
-      </div>
-      <div class="col-md-7 my-2">
-        <textarea name="message" id="message" class="form-control" rows="4" placeholder="Your Message" ></textarea>
-      </div>
-      <!-- Create a own modal for sucess message -->
-      <div id="success" class="mt-2 col-md-7 alert alert-success ">
-        <strong>Success!</strong> Your message has been sent successfully. We will get back to you soon.
-      </div>
+        </div> -->
+        <div class="col-md-7 my-2">
+          <textarea name="message" id="message" class="form-control" rows="4" placeholder="Your Message" ></textarea>
+        </div>
+        <!-- Create a own modal for sucess message -->
+        <div id="success" class="mt-2 col-md-7 alert alert-success ">
+          <strong>Success!</strong> Your message has been sent successfully. We will get back to you soon.
+        </div>
 
 
-      <div id="allError" class="mt-2 col-md-7 alert alert-danger "></div>
-      <div class="col-12 mt-3 mb-5">
-        <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
-      </div>
-    </form>
-  </div>
-</section>
+        <div id="allError" class="mt-2 col-md-7 alert alert-danger "></div>
+        <div class="col-12 my-5">
+          <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </section>
   <!-- Footer -->
   <footer>
     <!-- make year dynamic using js -->

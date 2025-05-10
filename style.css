@@ -114,7 +114,7 @@ textarea, input {
   color: red;
 }
 
-.services, .contact,.contact-form{
+.services, .contact, .contact-form, .our-projects{
   background-color: rgb(245, 245, 245);
 }
 .world-para, .world-head{
@@ -123,9 +123,23 @@ textarea, input {
 .world-head, .monday{
   font-size: 2rem;
 }
-/* .world-para{
-  font-size: 1.5rem;
-} */
+.our-head{
+  text-align: center;
+}
+.thumbnail{
+  /* width:100%; */
+  height: 200px;
+}
+
+.thumb-para{
+  font-size: 1rem;
+  margin-top: 10px;
+  color: darkblue;
+  text-align: center;
+}
+.thumb-link{
+  text-decoration: none;
+}
 
 /* CSS for tab and mobile */
 @media (max-width: 768px) {
@@ -142,7 +156,7 @@ textarea, input {
   }
   
   .services, .pricing, .contact {
-    padding: 40px 20px;
+    padding: 40px 0px;
   }
   
   .service-icon {
@@ -162,6 +176,10 @@ textarea, input {
   .world-head, .monday{
     font-size: 1.5rem;
   }
+  
+  .thumbnail{
+    max-height: 130px;
+  }
 }
 
 @media (max-width: 368px) {
@@ -174,5 +192,8 @@ textarea, input {
   
   .world-head, .monday{
     font-size: 1.5rem;
+  }
+  .thumbnail{
+    max-height: 130px;
   }
 }
