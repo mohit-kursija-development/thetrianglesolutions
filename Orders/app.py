@@ -94,6 +94,40 @@ def orders():
     
     return render_template("orders.html", shops=shops, username=session["user"])
 
+@app.route("/past-orders")
+def past_orders():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    return render_template("past_orders.html", username=session["user"])
+
+@app.route("/edit-order/<int:order_id>")
+def edit_order(order_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Verify order belongs to current user
+    cur.execute("SELECT user_id, shop_id FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    
+    if not order or order[0] != session["user_id"]:
+        cur.close()
+        conn.close()
+        return redirect(url_for("past_orders"))
+    
+    shop_id = order[1]
+    
+    # Get all shops
+    cur.execute("SELECT * FROM shops")
+    shops = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    return render_template("edit_order.html", order_id=order_id, shops=shops, username=session["user"])
+
 @app.route("/api/products")
 def get_products():
     if "user" not in session:
@@ -116,6 +150,201 @@ def get_products():
         })
     
     return {"products": product_list}
+
+@app.route("/api/get-order/<int:order_id>")
+def get_order(order_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get order details
+    cur.execute("""
+        SELECT o.id, o.shop_id, s.name, o.created_at 
+        FROM orders o
+        JOIN shops s ON o.shop_id = s.id
+        WHERE o.id = %s AND o.user_id = %s
+    """, (order_id, session["user_id"]))
+    
+    order = cur.fetchone()
+    
+    if not order:
+        cur.close()
+        conn.close()
+        return {"error": "Order not found"}, 404
+    
+    order_id, shop_id, shop_name, created_at = order
+    
+    # Get order items
+    cur.execute("""
+        SELECT oi.order_id, oi.product_id, p.name, oi.quantity, oi.price
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = %s
+    """, (order_id,))
+    
+    items = cur.fetchall()
+    item_list = []
+    total_price = 0
+    
+    for item in items:
+        item_id, product_id, product_name, quantity, price = item
+        item_total = quantity * price
+        total_price += item_total
+        item_list.append({
+            "id": item_id,
+            "product_id": product_id,
+            "product_name": product_name,
+            "quantity": quantity,
+            "price": float(price),
+            "total": float(item_total)
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        "id": order_id,
+        "shop_id": shop_id,
+        "shop_name": shop_name,
+        "created_at": created_at.isoformat(),
+        "items": item_list,
+        "total": float(total_price)
+    }
+
+@app.route("/api/past-orders")
+def get_past_orders():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    search = request.args.get("search", "").lower()
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get orders for the current user
+    cur.execute("""
+        SELECT o.id, o.shop_id, s.name, o.created_at 
+        FROM orders o
+        JOIN shops s ON o.shop_id = s.id
+        WHERE o.user_id = %s
+        ORDER BY o.created_at DESC
+    """, (session["user_id"],))
+    
+    orders = cur.fetchall()
+    order_list = []
+    
+    for order in orders:
+        order_id, shop_id, shop_name, created_at = order
+        
+        # Get order items
+        cur.execute("""
+            SELECT oi.order_id, oi.product_id, p.name, oi.quantity, oi.price
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = %s
+        """, (order_id,))
+        
+        items = cur.fetchall()
+        item_list = []
+        total_price = 0
+        
+        for item in items:
+            item_id, product_id, product_name, quantity, price = item
+            item_total = quantity * price
+            total_price += item_total
+            item_list.append({
+                "id": item_id,
+                "product_id": product_id,
+                "product_name": product_name,
+                "quantity": quantity,
+                "price": float(price),
+                "total": float(item_total)
+            })
+        
+        # Apply search filter
+        if search and search not in shop_name.lower():
+            continue
+        
+        order_list.append({
+            "id": order_id,
+            "shop_id": shop_id,
+            "shop_name": shop_name,
+            "created_at": created_at.isoformat(),
+            "items": item_list,
+            "total": float(total_price)
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return {"orders": order_list}
+
+@app.route("/api/delete-order/<int:order_id>", methods=["DELETE"])
+def delete_order(order_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Check if order belongs to current user
+    cur.execute("SELECT user_id FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    
+    if not order or order[0] != session["user_id"]:
+        cur.close()
+        conn.close()
+        return {"error": "Unauthorized"}, 401
+    
+    # Delete order items first
+    cur.execute("DELETE FROM order_items WHERE order_id = %s", (order_id,))
+    
+    # Delete order
+    cur.execute("DELETE FROM orders WHERE id = %s", (order_id,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True}
+
+@app.route("/api/update-order/<int:order_id>", methods=["PUT"])
+def update_order(order_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    data = request.json
+    items = data.get("items", [])
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Check if order belongs to current user
+    cur.execute("SELECT user_id FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    
+    if not order or order[0] != session["user_id"]:
+        cur.close()
+        conn.close()
+        return {"error": "Unauthorized"}, 401
+    
+    # Delete existing order items
+    cur.execute("DELETE FROM order_items WHERE order_id = %s", (order_id,))
+    
+    # Insert updated order items
+    for item in items:
+        cur.execute(
+            "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
+            (order_id, item["product_id"], item["quantity"], item["price"])
+        )
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True}
 
 @app.route("/api/create-order", methods=["POST"])
 def create_order():

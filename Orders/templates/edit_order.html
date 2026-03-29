@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Order - The Triangle Solutions</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/orders.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2><i class="bi bi-pencil-square"></i> Edit Order #{{ order_id }}</h2>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p style="margin: 0; margin-bottom: 10px;">Welcome, <strong>{{ username }}</strong></p>
+                    <a href="{{ url_for('past_orders') }}" class="logout-btn"><i class="bi bi-arrow-left"></i> Back</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Selection (Display only) -->
+        <div class="shop-search-section">
+            <div class="shop-search-label"><i class="bi bi-shop"></i> Shop</div>
+            <div id="shopDisplaySection" style="padding: 15px; background: #e8f4f8; border-radius: 8px; color: #333; font-weight: 600;">
+                <i class="bi bi-info-circle"></i> Shop: <span id="selectedShopName">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Products Section -->
+            <div class="products-section">
+                <div class="products-title"><i class="bi bi-box-seam"></i> Order Items</div>
+                <div id="productsContainer">
+                    <div class="no-products-message">Loading order items...</div>
+                </div>
+            </div>
+
+            <!-- Cart Section (Current Order) -->
+            <div class="cart-section">
+                <div class="cart-title"><i class="bi bi-cart"></i> Order Summary</div>
+                <div id="cartItems">
+                    <div class="no-items-message">Loading items...</div>
+                </div>
+                <div class="cart-total">
+                    Total: <span id="totalPrice">₹0.00</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                    <button class="generate-order-btn" id="generateOrderBtn" onclick="updateOrder()" style="background-color: #667eea;">
+                        <i class="bi bi-check-circle"></i> Update Order
+                    </button>
+                    <button class="generate-order-btn" onclick="deleteOrder()" style="background-color: #ff6b6b;">
+                        <i class="bi bi-trash"></i> Delete Order
+                    </button>
+                </div>
+                <button class="generate-order-btn" id="printBtn" onclick="printOrder()" style="background-color: #4CAF50; margin-top: 10px;">
+                    <i class="bi bi-printer"></i> Print Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let orderId = {{ order_id }};
+        let cart = {};
+        let orderData = {};
+    </script>
+    <script src="{{ url_for('static', filename='js/edit_order.js') }}"></script>
+</body>
+</html>
