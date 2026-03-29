@@ -73,6 +73,7 @@ def login():
         if user and check_password_hash(user[3], password):
             session.permanent = True
             session["user"] = username
+            session["user_id"] = user[0]  # Store user ID in session
             return redirect(url_for("orders"))
         else:
             return render_template("login.html", error="Invalid username or password")
@@ -133,8 +134,8 @@ def create_order():
     
     # Insert order
     cur.execute(
-        "INSERT INTO orders (user, shop_id, order_date) VALUES (%s, %s, NOW())",
-        (session["user"], shop_id)
+        "INSERT INTO orders (user_id, shop_id, created_at) VALUES (%s, %s, NOW())",
+        (session["user_id"], shop_id)
     )
     order_id = cur.lastrowid
     

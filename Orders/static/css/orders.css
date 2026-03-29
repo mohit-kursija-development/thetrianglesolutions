@@ -19,7 +19,7 @@ body {
 .header-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 30px 0;
+  padding: 30px 20px;
   margin-bottom: 30px;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -145,7 +145,7 @@ body {
 
 .products-section {
   background: white;
-  padding: 25px;
+  padding: 10px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }

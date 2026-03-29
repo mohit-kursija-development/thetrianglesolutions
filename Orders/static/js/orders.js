@@ -81,7 +81,7 @@ async function loadProducts() {
     }
 
     try {
-        const response = await fetch(`/api/products/${selectedShopId}`);
+        const response = await fetch(`/api/products`);
         const data = await response.json();
         
         if (data.error) {
@@ -112,9 +112,6 @@ function displayProducts(products) {
             <div class="product-card">
                 <div class="product-name">${product.name}</div>
                 <div class="product-price" id="price-${product.id}">₹${product.price.toFixed(2)}</div>
-                <div class="product-description">${product.description || 'No description'}</div>
-                <div class="product-stock">Stock: ${product.stock} units</div>
-                
                 <div class="quantity-buttons">
                     ${[1, 3, 5, 10, 20].map(qty => `
                         <button class="qty-btn" onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})">
