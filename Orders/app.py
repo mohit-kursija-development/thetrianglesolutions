@@ -86,13 +86,70 @@ def orders():
     
     conn = get_db_connection()
     cur = conn.cursor()
-    # cur.execute("SELECT * FROM products")
-    # products = cur.fetchall()
+    cur.execute("SELECT * FROM shops")
+    shops = cur.fetchall()
     cur.close()
     conn.close()
     
-    # return render_template("orders.html", products=products, username=session["user"])
-    return render_template("orders.html", username=session["user"])
+    return render_template("orders.html", shops=shops, username=session["user"])
+
+@app.route("/api/products")
+def get_products():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM products")
+    products = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    product_list = []
+    for product in products:
+        product_list.append({
+            "id": product[0],
+            "name": product[1],
+            "mrp": float(product[2]),
+            "price": product[3] if len(product) > 3 else "",
+        })
+    
+    return {"products": product_list}
+
+@app.route("/api/create-order", methods=["POST"])
+def create_order():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    data = request.json
+    items = data.get("items", [])
+    shop_id = data.get("shop_id")
+    
+    if not items or not shop_id:
+        return {"error": "Invalid order data"}, 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Insert order
+    cur.execute(
+        "INSERT INTO orders (user, shop_id, order_date) VALUES (%s, %s, NOW())",
+        (session["user"], shop_id)
+    )
+    order_id = cur.lastrowid
+    
+    # Insert order items
+    for item in items:
+        cur.execute(
+            "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
+            (order_id, item["product_id"], item["quantity"], item["price"])
+        )
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True, "order_id": order_id}
 
 @app.route("/logout")
 def logout():
