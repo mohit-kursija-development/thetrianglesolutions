@@ -3,76 +3,72 @@ let selectedShopId = null;
 let allShops = [];
 
 // Initialize the dropdown with all shops on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const shopDropdown = document.getElementById('shopDropdown');
-    const shopOptions = shopDropdown.querySelectorAll('.shop-option');
-    allShops = Array.from(shopOptions).map(option => ({
-        id: option.getAttribute('onclick').match(/\d+/)[0],
-        name: option.querySelector('.shop-option-name').textContent,
-        location: option.querySelector('.shop-option-location').textContent.replace('📍 ', '')
-    }));
+$(document).ready(function() {
+    const $shopDropdown = $('#shopDropdown');
+    const $shopOptions = $shopDropdown.find('.shop-option');
+    
+    allShops = $shopOptions.map(function() {
+        return {
+            id: $(this).attr('onclick').match(/\d+/)[0],
+            name: $(this).find('.shop-option-name').text(),
+            location: $(this).find('.shop-option-location').text().replace('📍 ', '')
+        };
+    }).get();
+    
     console.log('Shops loaded:', allShops);
+    
+    // Show dropdown on focus
+    $('#shopSearchInput').on('focus', function() {
+        $shopDropdown.addClass('show');
+    });
+    
+    // Hide dropdown when clicking outside
+    $(document).on('click', function(event) {
+        if (!$(event.target).closest('.search-container').length) {
+            $shopDropdown.removeClass('show');
+        }
+    });
 });
 
 // Filter shops based on search input
 function filterShops() {
-    const searchInput = document.getElementById('shopSearchInput').value.toLowerCase();
-    const shopDropdown = document.getElementById('shopDropdown');
-    const shopOptions = shopDropdown.querySelectorAll('.shop-option');
+    const searchInput = $('#shopSearchInput').val().toLowerCase();
+    const $shopDropdown = $('#shopDropdown');
+    const $shopOptions = $shopDropdown.find('.shop-option');
     
     // Show dropdown when typing
-    shopDropdown.classList.add('show');
+    $shopDropdown.addClass('show');
     
-    shopOptions.forEach(option => {
-        const shopName = option.querySelector('.shop-option-name').textContent.toLowerCase();
-        const shopLocation = option.querySelector('.shop-option-location').textContent.toLowerCase();
+    $shopOptions.each(function() {
+        const $option = $(this);
+        const shopName = $option.find('.shop-option-name').text().toLowerCase();
+        const shopLocation = $option.find('.shop-option-location').text().toLowerCase();
         
         if (shopName.includes(searchInput) || shopLocation.includes(searchInput) || searchInput === '') {
-            option.style.display = 'block';
+            $option.show();
         } else {
-            option.style.display = 'none';
+            $option.hide();
         }
     });
     
     // Hide dropdown if search is empty on focus out
     if (searchInput === '') {
         setTimeout(() => {
-            shopDropdown.classList.remove('show');
+            $shopDropdown.removeClass('show');
         }, 100);
     }
 }
 
-// Show dropdown on focus
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('shopSearchInput');
-    if (searchInput) {
-        searchInput.addEventListener('focus', function() {
-            const shopDropdown = document.getElementById('shopDropdown');
-            shopDropdown.classList.add('show');
-        });
-        
-        // Hide dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const shopSearchSection = document.querySelector('.search-container');
-            if (!shopSearchSection.contains(event.target)) {
-                document.getElementById('shopDropdown').classList.remove('show');
-            }
-        });
-    }
-});
-
 // Select a shop and load its products
 function selectShop(shopId, shopName) {
     selectedShopId = shopId;
-    const searchInput = document.getElementById('shopSearchInput');
-    const shopDropdown = document.getElementById('shopDropdown');
-    const selectedDisplay = document.getElementById('selectedShopDisplay');
-    const selectedShopNameSpan = document.getElementById('selectedShopName');
+    const $shopDropdown = $('#shopDropdown');
+    const $selectedDisplay = $('#selectedShopDisplay');
     
-    searchInput.value = shopName;
-    shopDropdown.classList.remove('show');
-    selectedDisplay.style.display = 'block';
-    selectedShopNameSpan.textContent = shopName;
+    $('#shopSearchInput').val(shopName);
+    $shopDropdown.removeClass('show');
+    $selectedDisplay.show();
+    $('#selectedShopName').text(shopName);
     
     loadProducts();
 }
@@ -80,7 +76,7 @@ function selectShop(shopId, shopName) {
 // Load products for the selected shop
 async function loadProducts() {
     if (!selectedShopId) {
-        document.getElementById('productsContainer').innerHTML = '<div class="no-products-message">Select a shop to view products</div>';
+        $('#productsContainer').html('<div class="no-products-message">Select a shop to view products</div>');
         return;
     }
 
@@ -89,59 +85,62 @@ async function loadProducts() {
         const data = await response.json();
         
         if (data.error) {
-            document.getElementById('productsContainer').innerHTML = `<div class="no-products-message">Error: ${data.error}</div>`;
+            $('#productsContainer').html(`<div class="no-products-message">Error: ${data.error}</div>`);
             return;
         }
         
         displayProducts(data.products);
     } catch (error) {
         console.error('Error loading products:', error);
-        document.getElementById('productsContainer').innerHTML = '<div class="no-products-message">Error loading products</div>';
+        $('#productsContainer').html('<div class="no-products-message">Error loading products</div>');
     }
 }
 
 // Display products in a grid
 function displayProducts(products) {
-    const container = document.getElementById('productsContainer');
+    const $container = $('#productsContainer');
     
     if (!products || products.length === 0) {
-        container.innerHTML = '<div class="no-products-message">No products available for this shop</div>';
+        $container.html('<div class="no-products-message">No products available for this shop</div>');
         return;
     }
 
-    container.innerHTML = `
-        <div class="products-grid">
-            ${products.map(product => `
-                <div class="product-card">
-                    <div class="product-name">${product.name}</div>
-                    <div class="product-price" id="price-${product.id}">₹${product.price.toFixed(2)}</div>
-                    <div class="product-description">${product.description || 'No description'}</div>
-                    <div class="product-stock">Stock: ${product.stock} units</div>
-                    
-                    <div class="quantity-buttons">
-                        ${[1, 3, 5, 10, 20].map(qty => `
-                            <button class="qty-btn" onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})">
-                                ${qty} kg
-                            </button>
-                        `).join('')}
-                    </div>
-                    
-                    <div class="price-edit-section">
-                        <label class="price-edit-label">Edit Price:</label>
-                        <input type="number" class="price-input" id="price-input-${product.id}" 
-                               value="${product.price}" step="0.01" 
-                               onchange="updateProductPrice(${product.id}, this.value)">
-                    </div>
+    let html = '<div class="products-grid">';
+    
+    products.forEach(product => {
+        html += `
+            <div class="product-card">
+                <div class="product-name">${product.name}</div>
+                <div class="product-price" id="price-${product.id}">₹${product.price.toFixed(2)}</div>
+                <div class="product-description">${product.description || 'No description'}</div>
+                <div class="product-stock">Stock: ${product.stock} units</div>
+                
+                <div class="quantity-buttons">
+                    ${[1, 3, 5, 10, 20].map(qty => `
+                        <button class="qty-btn" onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})">
+                            ${qty} kg
+                        </button>
+                    `).join('')}
                 </div>
-            `).join('')}
-        </div>
-    `;
+                
+                <div class="price-edit-section">
+                    <label class="price-edit-label">Edit Price:</label>
+                    <input type="number" class="price-input" id="price-input-${product.id}" 
+                           value="${product.price}" step="0.01" 
+                           onchange="updateProductPrice(${product.id}, this.value)">
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    $container.html(html);
 }
 
 // Update product price when user edits
 function updateProductPrice(productId, newPrice) {
-    const priceElement = document.getElementById(`price-${productId}`);
-    priceElement.textContent = `₹${parseFloat(newPrice).toFixed(2)}`;
+    const $priceElement = $(`#price-${productId}`);
+    $priceElement.text(`₹${parseFloat(newPrice).toFixed(2)}`);
     
     // Update in cart if product is already added
     if (cart[productId]) {
@@ -153,8 +152,8 @@ function updateProductPrice(productId, newPrice) {
 
 // Add product to cart
 function addToCart(productId, quantity, productName, basePrice, stock) {
-    const priceInput = document.getElementById(`price-input-${productId}`);
-    const actualPrice = priceInput ? parseFloat(priceInput.value) : basePrice;
+    const $priceInput = $(`#price-input-${productId}`);
+    const actualPrice = $priceInput.length ? parseFloat($priceInput.val()) : basePrice;
 
     if (cart[productId]) {
         cart[productId].quantity += quantity;
@@ -179,22 +178,24 @@ function removeFromCart(productId) {
 
 // Update cart display
 function updateCart() {
-    const cartItemsContainer = document.getElementById('cartItems');
-    const totalPriceElement = document.getElementById('totalPrice');
-    const generateOrderBtn = document.getElementById('generateOrderBtn');
+    const $cartItemsContainer = $('#cartItems');
+    const $totalPriceElement = $('#totalPrice');
+    const $generateOrderBtn = $('#generateOrderBtn');
 
     if (Object.keys(cart).length === 0) {
-        cartItemsContainer.innerHTML = '<div class="no-items-message">No items selected</div>';
-        totalPriceElement.textContent = '₹0.00';
-        generateOrderBtn.disabled = true;
+        $cartItemsContainer.html('<div class="no-items-message">No items selected</div>');
+        $totalPriceElement.text('₹0.00');
+        $generateOrderBtn.prop('disabled', true);
         return;
     }
 
     let totalPrice = 0;
-    cartItemsContainer.innerHTML = Object.entries(cart).map(([productId, item]) => {
+    let cartHtml = '';
+    
+    $.each(cart, function(productId, item) {
         const itemTotal = item.quantity * item.price;
         totalPrice += itemTotal;
-        return `
+        cartHtml += `
             <div class="cart-item">
                 <div class="cart-item-header">
                     <span class="cart-item-name">${item.name}</span>
@@ -207,10 +208,11 @@ function updateCart() {
                 </div>
             </div>
         `;
-    }).join('');
+    });
 
-    totalPriceElement.textContent = `₹${totalPrice.toFixed(2)}`;
-    generateOrderBtn.disabled = false;
+    $cartItemsContainer.html(cartHtml);
+    $totalPriceElement.text(`₹${totalPrice.toFixed(2)}`);
+    $generateOrderBtn.prop('disabled', false);
 }
 
 // Generate/Save order
@@ -249,9 +251,9 @@ async function generateOrder() {
             
             // Reset shop selection
             selectedShopId = null;
-            document.getElementById('shopSearchInput').value = '';
-            document.getElementById('selectedShopDisplay').style.display = 'none';
-            document.getElementById('productsContainer').innerHTML = '<div class="no-products-message">Select a shop to view products</div>';
+            $('#shopSearchInput').val('');
+            $('#selectedShopDisplay').hide();
+            $('#productsContainer').html('<div class="no-products-message">Select a shop to view products</div>');
         } else {
             alert('❌ Error saving bill: ' + (data.error || 'Unknown error'));
         }
