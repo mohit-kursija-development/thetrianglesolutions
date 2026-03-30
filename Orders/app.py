@@ -2,6 +2,7 @@
 import os
 import csv
 import io
+import zipfile
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from datetime import datetime, timedelta
@@ -715,7 +716,6 @@ def download_orders():
         return {"error": "Unauthorized"}, 401
     
     date_range = request.args.get('dateRange', 'today')
-    format_type = request.args.get('format', 'txt')
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -743,7 +743,7 @@ def download_orders():
     
     # Fetch orders
     cur.execute("""
-        SELECT o.id, o.user_id, u.username, o.shop_id, s.name as shop_name, o.created_at
+        SELECT o.id, o.user_id, u.username, o.shop_id, s.name as shop_name, s.address as shop_address , o.created_at
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
         LEFT JOIN shops s ON o.shop_id = s.id
@@ -753,18 +753,154 @@ def download_orders():
     
     orders = cur.fetchall()
     
-    if format_type == 'csv':
-        output = format_orders_csv(orders, cur, range_label)
+    if not orders:
+        cur.close()
+        conn.close()
+        return "No orders found for this date range", 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    
+    # Create ZIP file with individual order files
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for order in orders:
+            order_id, user_id, username, shop_id, shop_name, shop_address, created_at = order
+            
+            # Format individual order
+            order_content = format_single_order(order_id, shop_name, shop_address, created_at, cur)
+            
+            # Create filename
+            filename = f"Order_{order_id}_{created_at.strftime('%Y%m%d_%H%M%S')}.txt"
+            
+            # Add file to zip
+            zip_file.writestr(filename, order_content)
+    
+    zip_buffer.seek(0)
+    cur.close()
+    conn.close()
+    
+    # Return ZIP file
+    zip_filename = f"Orders_{date_range}_{today.strftime('%Y%m%d')}.zip"
+    return zip_buffer.getvalue(), 200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': f'attachment; filename="{zip_filename}"'
+    }
+
+@app.route("/api/preview-orders")
+def preview_orders():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    date_range = request.args.get('dateRange', 'today')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Determine date range
+    today = datetime.now().date()
+    
+    if date_range == 'today':
+        start_date = today
+        end_date = today
+    elif date_range == 'yesterday':
+        yesterday = today - timedelta(days=1)
+        start_date = yesterday
+        end_date = yesterday
+    elif date_range == 'last7days':
+        start_date = today - timedelta(days=7)
+        end_date = today
     else:
-        output = format_orders_text(orders, cur, range_label)
+        start_date = today
+        end_date = today
+    
+    # Fetch first order
+    cur.execute("""
+        SELECT o.id, o.user_id, u.username, o.shop_id, s.name as shop_name, o.created_at
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.id
+        LEFT JOIN shops s ON o.shop_id = s.id
+        WHERE DATE(o.created_at) >= %s AND DATE(o.created_at) <= %s
+        ORDER BY o.created_at DESC
+        LIMIT 1
+    """, (start_date, end_date))
+    
+    order = cur.fetchone()
+    
+    if not order:
+        cur.close()
+        conn.close()
+        return "No orders found for preview", 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    
+    order_id, user_id, username, shop_id, shop_name, created_at = order
+    preview_content = format_single_order(order_id, username, shop_name, created_at, cur)
     
     cur.close()
     conn.close()
     
-    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    return preview_content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+def format_single_order(order_id, shop_name, shop_address, created_at, cur):
+    """Format a single order for dot matrix printer (fixed-width text)"""
+    lines = []
+    
+    # Header
+    # lines.append("=" * 80)
+    # lines.append("THE TRIANGLE SOLUTIONS - ORDER RECEIPT".center(80))
+    # lines.append("=" * 80)
+    # lines.append("")
+    
+    # Order information
+    lines.append(f"ORDER #: {order_id}")
+    lines.append(f"DATE: {created_at.strftime('%d-%m-%Y %H:%M:%S')}")
+    # lines.append(f"SALESMAN: {username}")
+    lines.append(f"SHOP: {shop_name}")
+    lines.append(f"SHOP ADDRESS: {shop_address}")
+    lines.append("")
+    lines.append("-" * 80)
+    
+    # Fetch order items
+    cur.execute("""
+        SELECT p.name, oi.quantity, oi.price, (oi.quantity * oi.price) as total
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = %s
+    """, (order_id,))
+    
+    items = cur.fetchall()
+    
+    if items:
+        # Item header
+        lines.append(f"{'PRODUCT':<40} {'QTY':>8} {'PRICE':>12} {'TOTAL':>12}")
+        lines.append("-" * 80)
+        
+        total_amount = 0
+        for item in items:
+            product_name, quantity, price, item_total = item
+            product_name = product_name[:40] if product_name else "Unknown"
+            qty_str = f"{quantity}"
+            price_str = f"₹{float(price):.2f}"
+            total_str = f"₹{float(item_total):.2f}"
+            
+            lines.append(f"{product_name:<40} {qty_str:>8} {price_str:>12} {total_str:>12}")
+            total_amount += float(item_total)
+        
+        lines.append("-" * 80)
+        lines.append(f"{'TOTAL AMOUNT:':<48} {f'₹{total_amount:.2f}':>27}")
+    else:
+        lines.append("NO ITEMS IN THIS ORDER".center(80))
+    
+    lines.append("")
+    lines.append("-" * 80)
+    lines.append(f"Generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}".center(80))
+    lines.append("=" * 80)
+    lines.append("")
+    
+    return "\n".join(lines)
 
 def format_orders_text(orders, cur, range_label):
-    """Format orders for dot matrix printer (fixed-width text)"""
+    """Format orders for dot matrix printer (fixed-width text) - LEGACY"""
     lines = []
     
     # Header

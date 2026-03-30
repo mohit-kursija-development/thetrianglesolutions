@@ -76,35 +76,29 @@
 
                 <!-- Format Section -->
                 <div class="format-section">
-                    <label class="format-label"><i class="bi bi-file-earmark"></i> Select Download Format:</label>
-                    <div class="format-options">
-                        <div class="format-option">
-                            <input type="radio" name="format" value="txt" id="formatTxt" checked>
-                            <label for="formatTxt" style="margin-bottom: 0; cursor: pointer;">📄 Text (.txt)<br><small>For Dot Matrix</small></label>
-                        </div>
-                        <!-- <div class="format-option">
-                            <input type="radio" name="format" value="csv" id="formatCsv">
-                            <label for="formatCsv" style="margin-bottom: 0; cursor: pointer;">📊 CSV (.csv)<br><small>For Excel</small></label>
-                        </div> -->
+                    <label class="format-label"><i class="bi bi-file-earmark"></i> Download Format:</label>
+                    <div style="padding: 15px; background-color: #e8f5e9; border-radius: 6px; color: #2e7d32; font-weight: 500;">
+                        <i class="bi bi-file-earmark-zip"></i> <strong>ZIP Archive</strong> - Individual order files for each order
+                        <br><small style="margin-top: 8px; display: block;">Each order will be saved as a separate .txt file optimized for dot-matrix printers.</small>
                     </div>
                 </div>
 
                 <!-- Buttons -->
                 <div class="download-buttons">
                     <button type="button" class="preview-btn" onclick="previewOrders()">
-                        <i class="bi bi-eye"></i> Preview
+                        <i class="bi bi-eye"></i> Preview Sample
                     </button>
-                    <button type="button" class="download-btn" onclick="downloadOrders('txt')">
-                        <i class="bi bi-download"></i> Download (Text)
-                    </button>
-                    <button type="button" class="download-btn" onclick="downloadOrders('csv')">
-                        <i class="bi bi-download"></i> Download (CSV)
+                    <button type="button" class="download-btn" onclick="downloadOrders()">
+                        <i class="bi bi-download"></i> Download ZIP
                     </button>
                 </div>
             </form>
 
             <!-- Preview Section -->
             <div class="preview-section" id="previewSection">
+                <div style="margin-bottom: 10px; padding: 10px; background-color: #fff3cd; border-radius: 4px; font-size: 12px;">
+                    <strong>Preview (Sample Order):</strong> This shows how each order will be formatted in the ZIP file.
+                </div>
                 <div id="previewContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></div>
             </div>
         </div>
@@ -142,19 +136,19 @@
 
         async function previewOrders() {
             const dateRange = document.querySelector('input[name="dateRange"]:checked').value;
-            const format = 'txt'; // Always preview as text
 
             try {
-                const response = await fetch(`/api/download-orders?dateRange=${dateRange}&format=${format}`);
+                const response = await fetch(`/api/preview-orders?dateRange=${dateRange}`);
                 const data = await response.text();
 
-                if (data.includes('Error') || data.includes('error')) {
+                if (data.includes('Error') || data.includes('error') || response.status !== 200) {
                     $('#previewContent').text('Error: ' + data);
                 } else {
                     $('#previewContent').text(data);
                 }
 
                 document.getElementById('previewSection').classList.add('active');
+                document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('Error:', error);
                 $('#previewContent').text('Error loading preview: ' + error.message);
@@ -162,29 +156,32 @@
             }
         }
 
-        async function downloadOrders(format) {
+        async function downloadOrders() {
             const dateRange = document.querySelector('input[name="dateRange"]:checked').value;
 
             try {
-                const response = await fetch(`/api/download-orders?dateRange=${dateRange}&format=${format}`);
-                const data = await response.text();
+                const response = await fetch(`/api/download-orders?dateRange=${dateRange}`);
+                
+                if (!response.ok) {
+                    alert('❌ Error downloading orders: ' + response.statusText);
+                    return;
+                }
 
-                // Create blob and download
-                const blob = new Blob([data], { type: 'text/plain' });
+                const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
 
                 const now = new Date();
                 const dateStr = now.toISOString().split('T')[0];
-                a.download = `orders_${dateRange}_${dateStr}.${format === 'csv' ? 'csv' : 'txt'}`;
+                a.download = `orders_${dateRange}_${dateStr}.zip`;
 
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
-                alert('✅ Orders downloaded successfully!');
+                alert('✅ Orders downloaded successfully! A ZIP file containing individual order files is ready for printing.');
             } catch (error) {
                 console.error('Error:', error);
                 alert('❌ Error downloading orders: ' + error.message);
