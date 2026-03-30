@@ -27,6 +27,7 @@
                         <a href="{{ url_for('past_orders') }}" class="nav-btn"><i class="bi bi-clock-history"></i> Past Orders</a>
                         {% if role == 'admin' %}
                         <a href="{{ url_for('sales') }}" class="nav-btn"><i class="bi bi-bar-chart-line"></i> Sales</a>
+                        <a href="{{ url_for('save_orders') }}" class="nav-btn"><i class="bi bi-download"></i> Download</a>
                         {% endif %}
                         <a href="{{ url_for('logout') }}" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
                     </div>

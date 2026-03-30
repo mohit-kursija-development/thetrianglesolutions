@@ -1,0 +1,173 @@
+.download-section {
+  background: white;
+  padding: 30px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.download-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #667eea;
+}
+
+.date-option {
+  padding: 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: #f8f9fa;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.date-option:hover {
+  border-color: #667eea;
+  background-color: #f0f4ff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.date-option.active {
+  border-color: #667eea;
+  background-color: #e8eeff;
+}
+
+.date-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.date-option label {
+  margin: 0;
+  flex-grow: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.date-option-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
+}
+
+.date-option-desc {
+  color: #666;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.format-section {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.format-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.format-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.format-option {
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.format-option:hover {
+  border-color: #667eea;
+  background-color: #f0f4ff;
+}
+
+.format-option input[type="radio"] {
+  margin-right: 8px;
+}
+
+.preview-section {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+}
+
+.preview-section.active {
+  display: block;
+}
+
+.download-buttons {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.download-btn {
+  padding: 12px 24px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.download-btn:hover {
+  background-color: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.download-btn:disabled {
+  background-color: #bbb;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.preview-btn {
+  padding: 12px 24px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.preview-btn:hover {
+  background-color: #2980b9;
+}
+
+.no-orders-message {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-style: italic;
+}

@@ -1,8 +1,10 @@
 # app.py
 import os
+import csv
+import io
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
-from datetime import timedelta
+from datetime import datetime, timedelta
 import mysql.connector
 from mysql.connector import pooling
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -703,6 +705,190 @@ def logout():
     response = redirect(url_for("login"))
     response.set_cookie('session', '', expires=0)
     return redirect(url_for("login"))
+
+@app.route("/api/download-orders")
+def download_orders():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    date_range = request.args.get('dateRange', 'today')
+    format_type = request.args.get('format', 'txt')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Determine date range
+    today = datetime.now().date()
+    
+    if date_range == 'today':
+        start_date = today
+        end_date = today
+        range_label = "Today's Orders"
+    elif date_range == 'yesterday':
+        yesterday = today - timedelta(days=1)
+        start_date = yesterday
+        end_date = yesterday
+        range_label = "Yesterday's Orders"
+    elif date_range == 'last7days':
+        start_date = today - timedelta(days=7)
+        end_date = today
+        range_label = "Last 7 Days Orders"
+    else:
+        start_date = today
+        end_date = today
+        range_label = "Orders"
+    
+    # Fetch orders
+    cur.execute("""
+        SELECT o.id, o.user_id, u.username, o.shop_id, s.name as shop_name, o.created_at
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.id
+        LEFT JOIN shops s ON o.shop_id = s.id
+        WHERE DATE(o.created_at) >= %s AND DATE(o.created_at) <= %s
+        ORDER BY o.created_at DESC
+    """, (start_date, end_date))
+    
+    orders = cur.fetchall()
+    
+    if format_type == 'csv':
+        output = format_orders_csv(orders, cur, range_label)
+    else:
+        output = format_orders_text(orders, cur, range_label)
+    
+    cur.close()
+    conn.close()
+    
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+def format_orders_text(orders, cur, range_label):
+    """Format orders for dot matrix printer (fixed-width text)"""
+    lines = []
+    
+    # Header
+    lines.append("=" * 80)
+    lines.append("THE TRIANGLE SOLUTIONS - ORDER REPORT".center(80))
+    lines.append(range_label.center(80))
+    lines.append("Generated: " + datetime.now().strftime("%d-%m-%Y %H:%M:%S").center(80))
+    lines.append("=" * 80)
+    lines.append("")
+    
+    if not orders:
+        lines.append("NO ORDERS FOUND FOR THIS DATE RANGE".center(80))
+        lines.append("")
+    else:
+        for order in orders:
+            order_id, user_id, username, shop_id, shop_name, created_at = order
+            
+            # Order header
+            lines.append("-" * 80)
+            lines.append(f"ORDER #: {order_id:<20} SALESMAN: {username:<20} DATE: {created_at.strftime('%d-%m-%Y %H:%M')}")
+            lines.append(f"SHOP: {shop_name}")
+            lines.append("")
+            
+            # Fetch order items
+            cur.execute("""
+                SELECT p.name, oi.quantity, oi.price, (oi.quantity * oi.price) as total
+                FROM order_items oi
+                LEFT JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = %s
+            """, (order_id,))
+            
+            items = cur.fetchall()
+            
+            if items:
+                # Item header
+                lines.append(f"{'PRODUCT':<40} {'QTY':>8} {'PRICE':>12} {'TOTAL':>12}")
+                lines.append("-" * 80)
+                
+                total_amount = 0
+                for item in items:
+                    product_name, quantity, price, item_total = item
+                    product_name = product_name[:40] if product_name else "Unknown"
+                    qty_str = f"{quantity}"
+                    price_str = f"₹{float(price):.2f}"
+                    total_str = f"₹{float(item_total):.2f}"
+                    
+                    lines.append(f"{product_name:<40} {qty_str:>8} {price_str:>12} {total_str:>12}")
+                    total_amount += float(item_total)
+                
+                lines.append("-" * 80)
+                lines.append(f"{'TOTAL AMOUNT:':<48} {f'₹{total_amount:.2f}':>27}")
+            
+            lines.append("")
+            lines.append("")
+    
+    lines.append("=" * 80)
+    lines.append("END OF REPORT".center(80))
+    lines.append("=" * 80)
+    
+    return "\n".join(lines)
+
+# def format_orders_csv(orders, cur, range_label):
+#     """Format orders as CSV for Excel"""
+#     output = io.StringIO()
+#     writer = csv.writer(output)
+    
+#     # Headers
+#     writer.writerow(['Report', range_label, '', '', ''])
+#     writer.writerow(['Generated', datetime.now().strftime("%d-%m-%Y %H:%M:%S"), '', '', ''])
+#     writer.writerow([])
+#     writer.writerow(['Order ID', 'Salesman', 'Shop', 'Date', 'Product', 'Quantity', 'Price', 'Total'])
+    
+#     if orders:
+#         for order in orders:
+#             order_id, user_id, username, shop_id, shop_name, created_at = order
+            
+#             # Fetch order items
+#             cur.execute("""
+#                 SELECT p.name, oi.quantity, oi.price, (oi.quantity * oi.price) as total
+#                 FROM order_items oi
+#                 LEFT JOIN products p ON oi.product_id = p.id
+#                 WHERE oi.order_id = %s
+#             """, (order_id,))
+            
+#             items = cur.fetchall()
+            
+#             if items:
+#                 for idx, item in enumerate(items):
+#                     product_name, quantity, price, item_total = item
+#                     if idx == 0:
+#                         writer.writerow([
+#                             order_id,
+#                             username,
+#                             shop_name,
+#                             created_at.strftime("%d-%m-%Y %H:%M"),
+#                             product_name,
+#                             quantity,
+#                             float(price),
+#                             float(item_total)
+#                         ])
+#                     else:
+#                         writer.writerow([
+#                             '',
+#                             '',
+#                             '',
+#                             '',
+#                             product_name,
+#                             quantity,
+#                             float(price),
+#                             float(item_total)
+#                         ])
+#             else:
+#                 writer.writerow([
+#                     order_id,
+#                     username,
+#                     shop_name,
+#                     created_at.strftime("%d-%m-%Y %H:%M"),
+#                     'No items',
+#                     '',
+#                     '',
+#                     ''
+#                 ])
+    
+#     return output.getvalue()
 
 if __name__ == "__main__":
     app.run(debug=True)

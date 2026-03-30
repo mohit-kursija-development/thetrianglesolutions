@@ -23,6 +23,8 @@
                 <div class="col-md-6 text-md-end">
                     <p style="margin: 0; margin-bottom: 10px;">Welcome, <strong>{{ username }}</strong></p>
                     <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                        <a href="{{ url_for('sales') }}" class="logout-btn"><i class="bi bi-graph-up"></i> Sales</a>
+                        <a href="{{ url_for('save_orders') }}" class="logout-btn"><i class="bi bi-download"></i> Download</a>
                         <a href="{{ url_for('shops') }}" class="logout-btn"><i class="bi bi-shop"></i> Shops</a>
                         <a href="{{ url_for('past_orders') }}" class="logout-btn"><i class="bi bi-arrow-left"></i> Back</a>
                     </div>

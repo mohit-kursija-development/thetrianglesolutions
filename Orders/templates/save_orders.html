@@ -3,19 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Save Orders - The Triangle Solutions</title>
+    <title>Download Orders - The Triangle Solutions</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/save_orders.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/past_orders.css') }}">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
+        <div class="header-section">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2><i class="bi bi-download"></i> Download Orders</h2>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p style="margin: 0; margin-bottom: 10px;">Welcome, <strong>{{ username }}</strong></p>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                        <a href="{{ url_for('orders') }}" class="new-order-btn"><i class="bi bi-plus-circle"></i> New Order</a>
+                        <a href="{{ url_for('past_orders') }}" class="new-order-btn"><i class="bi bi-clock-history"></i> Past Orders</a>
+                        <a href="{{ url_for('sales') }}" class="new-order-btn"><i class="bi bi-graph-up"></i> Sales</a>
+                        <a href="{{ url_for('logout') }}" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- Download Section -->
+        <div class="download-section">
+            <div class="download-title"><i class="bi bi-calendar-range"></i> Select Date Range</div>
+            
+            <form id="downloadForm">
+                <!-- Date Options -->
+                <div id="dateOptionsContainer">
+                    <!-- Today -->
+                    <div class="date-option" onclick="selectDateRange('today', this)">
+                        <label>
+                            <input type="radio" name="dateRange" value="today" checked>
+                            <div>
+                                <div class="date-option-title">📅 Today's Orders</div>
+                                <div class="date-option-desc" id="todayDesc">All orders from today</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Yesterday -->
+                    <div class="date-option" onclick="selectDateRange('yesterday', this)">
+                        <label>
+                            <input type="radio" name="dateRange" value="yesterday">
+                            <div>
+                                <div class="date-option-title">📆 Yesterday's Orders</div>
+                                <div class="date-option-desc" id="yesterdayDesc">All orders from yesterday</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Last 7 Days -->
+                    <div class="date-option" onclick="selectDateRange('last7days', this)">
+                        <label>
+                            <input type="radio" name="dateRange" value="last7days">
+                            <div>
+                                <div class="date-option-title">📊 Last 7 Days Orders</div>
+                                <div class="date-option-desc" id="last7daysDesc">All orders from the last 7 days</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Format Section -->
+                <div class="format-section">
+                    <label class="format-label"><i class="bi bi-file-earmark"></i> Select Download Format:</label>
+                    <div class="format-options">
+                        <div class="format-option">
+                            <input type="radio" name="format" value="txt" id="formatTxt" checked>
+                            <label for="formatTxt" style="margin-bottom: 0; cursor: pointer;">📄 Text (.txt)<br><small>For Dot Matrix</small></label>
+                        </div>
+                        <!-- <div class="format-option">
+                            <input type="radio" name="format" value="csv" id="formatCsv">
+                            <label for="formatCsv" style="margin-bottom: 0; cursor: pointer;">📊 CSV (.csv)<br><small>For Excel</small></label>
+                        </div> -->
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="download-buttons">
+                    <button type="button" class="preview-btn" onclick="previewOrders()">
+                        <i class="bi bi-eye"></i> Preview
+                    </button>
+                    <button type="button" class="download-btn" onclick="downloadOrders('txt')">
+                        <i class="bi bi-download"></i> Download (Text)
+                    </button>
+                    <button type="button" class="download-btn" onclick="downloadOrders('csv')">
+                        <i class="bi bi-download"></i> Download (CSV)
+                    </button>
+                </div>
+            </form>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <div id="previewContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></div>
+            </div>
+        </div>
     </div>
-    
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize date range display
+        $(document).ready(function() {
+            updateDateRangeDisplay();
+        });
+
+        function updateDateRangeDisplay() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const last7Days = new Date(today);
+            last7Days.setDate(last7Days.getDate() - 7);
+
+            $('#todayDesc').text(today.toLocaleDateString('en-IN'));
+            $('#yesterdayDesc').text(yesterday.toLocaleDateString('en-IN'));
+            $('#last7daysDesc').text(last7Days.toLocaleDateString('en-IN') + ' to ' + today.toLocaleDateString('en-IN'));
+        }
+
+        function selectDateRange(range, element) {
+            document.querySelector(`input[value="${range}"]`).checked = true;
+            document.querySelectorAll('.date-option').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        async function previewOrders() {
+            const dateRange = document.querySelector('input[name="dateRange"]:checked').value;
+            const format = 'txt'; // Always preview as text
+
+            try {
+                const response = await fetch(`/api/download-orders?dateRange=${dateRange}&format=${format}`);
+                const data = await response.text();
+
+                if (data.includes('Error') || data.includes('error')) {
+                    $('#previewContent').text('Error: ' + data);
+                } else {
+                    $('#previewContent').text(data);
+                }
+
+                document.getElementById('previewSection').classList.add('active');
+            } catch (error) {
+                console.error('Error:', error);
+                $('#previewContent').text('Error loading preview: ' + error.message);
+                document.getElementById('previewSection').classList.add('active');
+            }
+        }
+
+        async function downloadOrders(format) {
+            const dateRange = document.querySelector('input[name="dateRange"]:checked').value;
+
+            try {
+                const response = await fetch(`/api/download-orders?dateRange=${dateRange}&format=${format}`);
+                const data = await response.text();
+
+                // Create blob and download
+                const blob = new Blob([data], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                a.download = `orders_${dateRange}_${dateStr}.${format === 'csv' ? 'csv' : 'txt'}`;
+
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                alert('✅ Orders downloaded successfully!');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error downloading orders: ' + error.message);
+            }
+        }
+    </script>
+</body>
 </html>
