@@ -598,6 +598,104 @@ def collect_payment(order_id):
     
     return {"success": True, "message": "Payment collected successfully"}
 
+@app.route("/save_orders")
+def save_orders():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    if session.get("role") != "admin":
+        return redirect(url_for("past_orders"))
+
+    return render_template("save_orders.html", username=session["user"], role=session.get("role", "sales"))
+
+@app.route("/sales")
+def sales():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    if session.get("role") != "admin":
+        return redirect(url_for("orders"))
+    
+    return render_template("sales.html", username=session["user"], role=session.get("role", "sales"))
+
+@app.route("/api/salesman-sales")
+def get_salesman_sales():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get sales by each salesman for current month
+    cur.execute("""
+        SELECT u.id, u.username, COUNT(o.id) as total_orders, 
+               COALESCE(SUM(oi.quantity * oi.price), 0) as total_sales
+        FROM users u
+        LEFT JOIN orders o ON u.id = o.user_id 
+            AND YEAR(o.created_at) = YEAR(CURDATE())
+            AND MONTH(o.created_at) = MONTH(CURDATE())
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE u.role = 'sales'
+        GROUP BY u.id, u.username
+        ORDER BY total_sales DESC
+    """)
+    sales_data = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    salesman_list = []
+    for row in sales_data:
+        salesman_list.append({
+            "id": row[0],
+            "username": row[1],
+            "total_orders": row[2] if row[2] else 0,
+            "total_sales": float(row[3]) if row[3] else 0.0
+        })
+    
+    return {"salesmen": salesman_list}
+
+@app.route("/api/product-sales")
+def get_product_sales():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get product sales for current month
+    cur.execute("""
+        SELECT p.id, p.name, 
+               SUM(oi.quantity) as total_quantity,
+               COALESCE(SUM(oi.quantity * oi.price), 0) as total_revenue
+        FROM products p
+        LEFT JOIN order_items oi ON p.id = oi.product_id
+        LEFT JOIN orders o ON oi.order_id = o.id
+            AND YEAR(o.created_at) = YEAR(CURDATE())
+            AND MONTH(o.created_at) = MONTH(CURDATE())
+        GROUP BY p.id, p.name
+        ORDER BY total_revenue DESC
+    """)
+    product_data = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    product_list = []
+    for row in product_data:
+        product_list.append({
+            "id": row[0],
+            "name": row[1],
+            "total_quantity": float(row[2]) if row[2] else 0.0,
+            "total_revenue": float(row[3]) if row[3] else 0.0
+        })
+    
+    return {"products": product_list}
+
 @app.route("/logout")
 def logout():
     session.clear()
