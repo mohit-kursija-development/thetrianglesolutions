@@ -381,6 +381,190 @@ def create_order():
     
     return {"success": True, "order_id": order_id}
 
+@app.route("/shops")
+def shops():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM shops")
+    shops_list = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    return render_template("shops.html", shops=shops_list, username=session["user"])
+
+@app.route("/api/shops-data")
+def get_shops_data():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    search = request.args.get("search", "").lower()
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get all shops
+    cur.execute("SELECT id, name, address FROM shops")
+    shops_list = cur.fetchall()
+    
+    shops_data = []
+    for shop in shops_list:
+        shop_id, shop_name, address = shop
+        
+        # Apply search filter
+        if search and search not in shop_name.lower() and search not in location.lower():
+            continue
+        
+        # Calculate outstanding payment (unpaid orders)
+        cur.execute("""
+            SELECT COALESCE(SUM(
+                (SELECT COALESCE(SUM(oi.quantity * oi.price), 0) 
+                 FROM order_items oi 
+                 WHERE oi.order_id = o.id)
+            ), 0)
+            FROM orders o
+            WHERE o.shop_id = %s AND o.payment_status = 'pending'
+        """, (shop_id,))
+        
+        outstanding = cur.fetchone()[0]
+        outstanding = float(outstanding) if outstanding else 0.0
+        
+        # Get previous orders count
+        cur.execute("""
+            SELECT COUNT(*) FROM orders 
+            WHERE shop_id = %s AND payment_status = 'collected'
+        """, (shop_id,))
+        
+        paid_orders_count = cur.fetchone()[0]
+        
+        shops_data.append({
+            "id": shop_id,
+            "name": shop_name,
+            "address": address,
+            "outstanding": outstanding,
+            "paid_orders_count": paid_orders_count
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return {"shops": shops_data}
+
+@app.route("/api/shop-details/<int:shop_id>")
+def get_shop_details(shop_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get shop info
+    cur.execute("SELECT id, name, address FROM shops WHERE id = %s", (shop_id,))
+    shop = cur.fetchone()
+    
+    if not shop:
+        cur.close()
+        conn.close()
+        return {"error": "Shop not found"}, 404
+    
+    shop_id, shop_name, address = shop
+    
+    # Get pending orders
+    cur.execute("""
+        SELECT o.id, o.created_at,
+        (SELECT COALESCE(SUM(oi.quantity * oi.price), 0) 
+         FROM order_items oi 
+         WHERE oi.order_id = o.id) as total
+        FROM orders o
+        WHERE o.shop_id = %s AND o.payment_status = 'pending'
+        ORDER BY o.created_at DESC
+    """, (shop_id,))
+    
+    pending_orders = cur.fetchall()
+    pending_list = []
+    total_outstanding = 0
+    
+    for order in pending_orders:
+        order_id, created_at, total = order
+        total = float(total) if total else 0.0
+        total_outstanding += total
+        pending_list.append({
+            "id": order_id,
+            "created_at": created_at.isoformat(),
+            "total": total
+        })
+    
+    # Get collected payment history (last 10)
+    cur.execute("""
+        SELECT o.id, o.created_at, o.payment_collected_at,
+        (SELECT COALESCE(SUM(oi.quantity * oi.price), 0) 
+         FROM order_items oi 
+         WHERE oi.order_id = o.id) as total
+        FROM orders o
+        WHERE o.shop_id = %s AND o.payment_status = 'collected'
+        ORDER BY o.payment_collected_at DESC
+        LIMIT 10
+    """, (shop_id,))
+    
+    collected_orders = cur.fetchall()
+    collected_list = []
+    
+    for order in collected_orders:
+        order_id, created_at, collected_at, total = order
+        total = float(total) if total else 0.0
+        collected_list.append({
+            "id": order_id,
+            "created_at": created_at.isoformat(),
+            "collected_at": collected_at.isoformat() if collected_at else None,
+            "total": total
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        "shop": {
+            "id": shop_id,
+            "name": shop_name,
+            "address": address,
+        },
+        "pending_orders": pending_list,
+        "collected_orders": collected_list,
+        "total_outstanding": total_outstanding
+    }
+
+@app.route("/api/collect-payment/<int:order_id>", methods=["PUT"])
+def collect_payment(order_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Verify order exists
+    cur.execute("SELECT id FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    
+    if not order:
+        cur.close()
+        conn.close()
+        return {"error": "Order not found"}, 404
+    
+    # Update payment status
+    cur.execute("""
+        UPDATE orders 
+        SET payment_status = 'collected', payment_collected_at = NOW()
+        WHERE id = %s
+    """, (order_id,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True, "message": "Payment collected successfully"}
+
 @app.route("/logout")
 def logout():
     session.pop("user", None)

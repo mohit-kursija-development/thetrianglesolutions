@@ -115,7 +115,7 @@ function displayProducts(products) {
                 <div class="quantity-buttons">
                     ${[1, 3, 5, 10, 20].map(qty => `
                         <button class="qty-btn" onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})">
-                            ${qty} kg
+                            ${qty} 
                         </button>
                     `).join('')}
                 </div>
@@ -199,8 +199,8 @@ function updateCart() {
                     <span class="cart-item-remove" onclick="removeFromCart(${productId})">✕ Remove</span>
                 </div>
                 <div class="cart-item-details">
-                    <div>Qty: ${item.quantity} kg</div>
-                    <div>Price: ₹${item.price.toFixed(2)}/kg</div>
+                    <div>Qty: ${item.quantity} </div>
+                    <div>Price: ₹${item.price.toFixed(2)}</div>
                     <div style="font-weight: 600; color: #667eea;">Total: ₹${itemTotal.toFixed(2)}</div>
                 </div>
             </div>

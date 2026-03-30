@@ -54,7 +54,7 @@ function displayOrderItems() {
                 <div class="product-price" id="price-${item.product_id}">₹${item.price.toFixed(2)}</div>
                 
                 <div class="quantity-section" style="margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                    <label style="font-size: 13px; font-weight: 600; color: #666; display: block; margin-bottom: 8px;">Edit Quantity (kg):</label>
+                    <label style="font-size: 13px; font-weight: 600; color: #666; display: block; margin-bottom: 8px;">Edit Quantity:</label>
                     <input type="number" class="qty-input" id="qty-${item.product_id}" 
                            value="${item.quantity}" step="0.1" min="0"
                            onchange="updateItemQuantity(${item.product_id}, this.value)"
@@ -62,7 +62,7 @@ function displayOrderItems() {
                 </div>
                 
                 <div class="price-edit-section">
-                    <label class="price-edit-label">Edit Price (₹/kg):</label>
+                    <label class="price-edit-label">Edit Price:</label>
                     <input type="number" class="price-input" id="price-input-${item.product_id}" 
                            value="${item.price}" step="0.01" min="0"
                            onchange="updateItemPrice(${item.product_id}, this.value)">
@@ -126,8 +126,8 @@ function updateCart() {
                     <span class="cart-item-remove" onclick="removeFromCart(${productId})">✕ Remove</span>
                 </div>
                 <div class="cart-item-details">
-                    <div>Qty: ${item.quantity} kg</div>
-                    <div>Price: ₹${item.price.toFixed(2)}/kg</div>
+                    <div>Qty: ${item.quantity}</div>
+                    <div>Price: ₹${item.price.toFixed(2)} /-</div>
                     <div style="font-weight: 600; color: #667eea;">Total: ₹${itemTotal.toFixed(2)}</div>
                 </div>
             </div>

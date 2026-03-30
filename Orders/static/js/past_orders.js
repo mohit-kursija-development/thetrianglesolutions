@@ -65,7 +65,7 @@ function displayOrders(orders) {
                         ${order.items.map(item => `
                             <div class="order-item">
                                 <div class="item-name-qty">
-                                    ${item.product_name} × ${item.quantity} kg @ ₹${item.price.toFixed(2)}/kg
+                                    ${item.product_name} × ${item.quantity} @ ₹${item.price.toFixed(2)}
                                 </div>
                                 <div class="item-total">₹${item.total.toFixed(2)}</div>
                             </div>
