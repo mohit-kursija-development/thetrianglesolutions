@@ -11,7 +11,7 @@ $(document).ready(function() {
         return {
             id: $(this).attr('onclick').match(/\d+/)[0],
             name: $(this).find('.shop-option-name').text(),
-            location: $(this).find('.shop-option-location').text().replace('📍 ', '')
+            address: $(this).find('.shop-option-address').text().replace('📍 ', '')
         };
     }).get();
     
@@ -42,9 +42,9 @@ function filterShops() {
     $shopOptions.each(function() {
         const $option = $(this);
         const shopName = $option.find('.shop-option-name').text().toLowerCase();
-        const shopLocation = $option.find('.shop-option-location').text().toLowerCase();
+        const shopAddress = $option.find('.shop-option-address').text().toLowerCase();
         
-        if (shopName.includes(searchInput) || shopLocation.includes(searchInput) || searchInput === '') {
+        if (shopName.includes(searchInput) || shopAddress.includes(searchInput) || searchInput === '') {
             $option.show();
         } else {
             $option.hide();

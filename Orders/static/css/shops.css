@@ -174,7 +174,7 @@ body {
     gap: 8px;
 }
 
-.shop-item-location {
+.shop-item-address {
     font-size: 12px;
     color: var(--text-light);
 }
@@ -256,7 +256,7 @@ body {
     font-size: 22px;
 }
 
-.shop-header-location {
+.shop-header-address {
     display: flex;
     align-items: center;
     gap: 6px;

@@ -49,7 +49,7 @@ function displayShops(shops) {
                 <div class="shop-item-name">
                     <i class="bi bi-shop"></i> ${shop.name}
                 </div>
-                <div class="shop-item-location">📍 ${shop.location}</div>
+                <div class="shop-item-address">📍 ${shop.address}</div>
             </div>
             ${shop.outstanding > 0 ? `<div class="outstanding-badge">₹${shop.outstanding.toFixed(2)}</div>` : ''}
         </div>
@@ -58,9 +58,13 @@ function displayShops(shops) {
 
 // Filter and display shops based on search
 function filterAndDisplayShops(searchTerm) {
+    if (!searchTerm) {
+        displayShops(allShops);
+        return;
+    }
     const filtered = allShops.filter(shop => 
         shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        shop.location.toLowerCase().includes(searchTerm.toLowerCase())
+        shop.address.toLowerCase().includes(searchTerm.toLowerCase())
     );
     displayShops(filtered);
 }
@@ -111,8 +115,8 @@ function displayShopDetails(data) {
                 <i class="bi bi-shop"></i>
                 <h3>${shop.name}</h3>
             </div>
-            <div class="shop-header-location">
-                <i class="bi bi-geo-alt"></i> ${shop.location}
+            <div class="shop-header-address">
+                <i class="bi bi-geo-alt"></i> ${shop.address}
             </div>
         </div>
     `;

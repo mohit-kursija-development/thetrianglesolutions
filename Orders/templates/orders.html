@@ -39,14 +39,14 @@
                     type="text" 
                     id="shopSearchInput" 
                     class="search-input" 
-                    placeholder="Search shops by name or location..."
+                    placeholder="Search shops by name or address..."
                     onkeyup="filterShops()">
                 <div class="shop-dropdown" id="shopDropdown">
                     {% if shops %}
                         {% for shop in shops %}
                             <div class="shop-option" onclick="selectShop({{ shop[0] }}, '{{ shop[1] }}')">
                                 <span class="shop-option-name">{{ shop[1] }}</span>
-                                <span class="shop-option-location">📍 {{ shop[2] }}</span>
+                                <span class="shop-option-address">📍 {{ shop[2] }}</span>
                             </div>
                         {% endfor %}
                     {% endif %}
