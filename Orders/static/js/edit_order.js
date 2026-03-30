@@ -147,6 +147,12 @@ function removeFromCart(productId) {
 
 // Update order
 async function updateOrder() {
+    // Check if user is admin
+    if (userRole !== 'admin') {
+        alert('❌ Permission Denied: Only admin users can edit orders');
+        return;
+    }
+
     if (Object.keys(cart).length === 0) {
         alert('Please add at least one item to the order');
         return;
@@ -174,6 +180,8 @@ async function updateOrder() {
         if (data.success) {
             alert(`✅ Order #${orderId} updated successfully!`);
             window.location.href = '/past-orders';
+        } else if (response.status === 403) {
+            alert('❌ Permission Denied: Only admin users can edit orders');
         } else {
             alert('❌ Error updating order: ' + (data.error || 'Unknown error'));
         }
@@ -185,6 +193,12 @@ async function updateOrder() {
 
 // Delete order
 async function deleteOrder() {
+    // Check if user is admin
+    if (userRole !== 'admin') {
+        alert('❌ Permission Denied: Only admin users can delete orders');
+        return;
+    }
+
     if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
         return;
     }
@@ -199,6 +213,8 @@ async function deleteOrder() {
         if (data.success) {
             alert('✅ Order deleted successfully!');
             window.location.href = '/past-orders';
+        } else if (response.status === 403) {
+            alert('❌ Permission Denied: Only admin users can delete orders');
         } else {
             alert('❌ Error deleting order: ' + (data.error || 'Unknown error'));
         }

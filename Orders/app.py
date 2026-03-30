@@ -74,6 +74,7 @@ def login():
             session.permanent = True
             session["user"] = username
             session["user_id"] = user[0]  # Store user ID in session
+            session["role"] = user[4]  # Store user role in session
             return redirect(url_for("orders"))
         else:
             return render_template("login.html", error="Invalid username or password")
@@ -99,21 +100,25 @@ def past_orders():
     if "user" not in session:
         return redirect(url_for("login"))
     
-    return render_template("past_orders.html", username=session["user"])
+    return render_template("past_orders.html", username=session["user"], role=session.get("role", "sales"))
 
 @app.route("/edit-order/<int:order_id>")
 def edit_order(order_id):
     if "user" not in session:
         return redirect(url_for("login"))
     
+    # Check if user is admin - only admin can edit orders
+    if session.get("role") != "admin":
+        return redirect(url_for("past_orders"))
+    
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Verify order belongs to current user
+    # Verify order exists
     cur.execute("SELECT user_id, shop_id FROM orders WHERE id = %s", (order_id,))
     order = cur.fetchone()
     
-    if not order or order[0] != session["user_id"]:
+    if not order:
         cur.close()
         conn.close()
         return redirect(url_for("past_orders"))
@@ -126,7 +131,7 @@ def edit_order(order_id):
     cur.close()
     conn.close()
     
-    return render_template("edit_order.html", order_id=order_id, shops=shops, username=session["user"])
+    return render_template("edit_order.html", order_id=order_id, shops=shops, username=session["user"], role=session.get("role", "sales"))
 
 @app.route("/api/products")
 def get_products():
@@ -160,12 +165,21 @@ def get_order(order_id):
     cur = conn.cursor()
     
     # Get order details
-    cur.execute("""
-        SELECT o.id, o.shop_id, s.name, o.created_at 
-        FROM orders o
-        JOIN shops s ON o.shop_id = s.id
-        WHERE o.id = %s AND o.user_id = %s
-    """, (order_id, session["user_id"]))
+    if session.get("role") == "admin":
+        # Admin can access any order
+        cur.execute("""
+            SELECT o.id, o.shop_id, s.name, o.created_at 
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = %s
+        """, (order_id,))
+    else:
+        cur.execute("""
+            SELECT o.id, o.shop_id, s.name, o.created_at 
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = %s AND o.user_id = %s
+        """, (order_id, session["user_id"]))
     
     order = cur.fetchone()
     
@@ -224,14 +238,23 @@ def get_past_orders():
     cur = conn.cursor()
     
     # Get orders for the current user
-    cur.execute("""
-        SELECT o.id, o.shop_id, s.name, o.created_at 
-        FROM orders o
-        JOIN shops s ON o.shop_id = s.id
-        WHERE o.user_id = %s
-        ORDER BY o.created_at DESC
-    """, (session["user_id"],))
-    
+    if session.get("role") == "admin":
+        # Admin can see all orders
+        cur.execute("""
+            SELECT o.id, o.shop_id, s.name, o.created_at 
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            ORDER BY o.created_at DESC
+        """)
+    else:
+        cur.execute("""
+            SELECT o.id, o.shop_id, s.name, o.created_at 
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.user_id = %s
+            ORDER BY o.created_at DESC
+        """, (session["user_id"],))
+        
     orders = cur.fetchall()
     order_list = []
     
@@ -285,15 +308,21 @@ def get_past_orders():
 def delete_order(order_id):
     if "user" not in session:
         return {"error": "Unauthorized"}, 401
+    if session.get("role") != "admin":
+        return {"error": "Only admin users can delete orders"}, 403
     
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Check if order belongs to current user
+    # Check if order exists
     cur.execute("SELECT user_id FROM orders WHERE id = %s", (order_id,))
     order = cur.fetchone()
     
-    if not order or order[0] != session["user_id"]:
+    if not order:
+        cur.close()
+        conn.close()
+        return {"error": "Order not found"}, 404
+    if order[0] != session["user_id"] and session.get("role") != "admin":
         cur.close()
         conn.close()
         return {"error": "Unauthorized"}, 401
@@ -325,8 +354,12 @@ def update_order(order_id):
     cur.execute("SELECT user_id FROM orders WHERE id = %s", (order_id,))
     order = cur.fetchone()
     
-    if not order or order[0] != session["user_id"]:
+    if not order:
         cur.close()
+        conn.close()
+        return {"error": "Order not found"}, 404
+    if order[0] != session["user_id"] and session.get("role") != "admin":
+        cur.close()        
         conn.close()
         return {"error": "Unauthorized"}, 401
     
@@ -567,7 +600,10 @@ def collect_payment(order_id):
 
 @app.route("/logout")
 def logout():
-    session.pop("user", None)
+    session.clear()
+    # Also clear the session cookie by setting it to an empty value and expiring it
+    response = redirect(url_for("login"))
+    response.set_cookie('session', '', expires=0)
     return redirect(url_for("login"))
 
 if __name__ == "__main__":

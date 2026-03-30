@@ -58,16 +58,21 @@
                     Total: <span id="totalPrice">₹0.00</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                    <button class="generate-order-btn" id="generateOrderBtn" onclick="updateOrder()" style="background-color: #667eea;">
+                    <button class="generate-order-btn" id="generateOrderBtn" onclick="updateOrder()" style="background-color: #667eea;" {% if role != 'admin' %}disabled{% endif %}>
                         <i class="bi bi-check-circle"></i> Update Order
                     </button>
-                    <button class="generate-order-btn" onclick="deleteOrder()" style="background-color: #ff6b6b;">
+                    <button class="generate-order-btn" onclick="deleteOrder()" style="background-color: #ff6b6b;" {% if role != 'admin' %}disabled{% endif %}>
                         <i class="bi bi-trash"></i> Delete Order
                     </button>
                 </div>
                 <button class="generate-order-btn" id="printBtn" onclick="printOrder()" style="background-color: #4CAF50; margin-top: 10px;">
                     <i class="bi bi-printer"></i> Print Order
                 </button>
+                {% if role != 'admin' %}
+                <div style="margin-top: 15px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404;">
+                    <i class="bi bi-info-circle"></i> <strong>Read-Only Mode:</strong> Only admin users can edit or delete orders.
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -78,6 +83,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let orderId = {{ order_id }};
+        let userRole = "{{ role }}";
         let cart = {};
         let orderData = {};
     </script>

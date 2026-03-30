@@ -73,12 +73,18 @@ function displayOrders(orders) {
                     </div>
                     
                     <div class="order-actions">
-                        <a href="/edit-order/${order.id}" class="edit-btn">
-                            <i class="bi bi-eye"></i> View
-                        </a>
-                        <button class="delete-btn" onclick="deleteOrder(${order.id})">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
+                        ${userRole === 'admin' ? `
+                            <a href="/edit-order/${order.id}" class="edit-btn">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <button class="delete-btn" onclick="deleteOrder(${order.id})">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        ` : `
+                            <a href="/edit-order/${order.id}" class="edit-btn" style="opacity: 0.5; cursor: not-allowed;" onclick="event.preventDefault(); alert('Only admin users can edit orders.')">
+                                <i class="bi bi-eye"></i> View Only
+                            </a>
+                        `}
                     </div>
                 </div>
             </div>
@@ -116,6 +122,8 @@ async function deleteOrder(orderId) {
         if (data.success) {
             alert('✅ Order deleted successfully!');
             loadPastOrders();
+        } else if (response.status === 403) {
+            alert('❌ Permission Denied: Only admin users can delete orders');
         } else {
             alert('❌ Error deleting order: ' + (data.error || 'Unknown error'));
         }
