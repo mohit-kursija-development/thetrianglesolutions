@@ -108,6 +108,7 @@ function loadShopDetails(shopId) {
 // Display shop details
 function displayShopDetails(data) {
     const { shop, pending_orders, collected_orders, total_outstanding } = data;
+    const isAdmin = userRole === 'admin';
     
     let html = `
         <div class="shop-header">
@@ -115,9 +116,22 @@ function displayShopDetails(data) {
                 <i class="bi bi-shop"></i>
                 <h3>${shop.name}</h3>
             </div>
-            <div class="shop-header-address">
-                <i class="bi bi-geo-alt"></i> ${shop.address}
+            ${isAdmin ? `<button class="btn btn-sm btn-primary" onclick="openEditShopModal(${shop.id}, '${shop.name}', '${shop.address}', '${shop.number_1 || ''}', '${shop.number_2 || ''}')"><i class="bi bi-pencil"></i> Edit Shop Details</button>` : ''}
+        </div>
+        
+        <div class="shop-details-section">
+            <div class="detail-item">
+                <label>Address:</label>
+                <p>${shop.address}</p>
             </div>
+            ${shop.number_1 ? `<div class="detail-item">
+                <label>Number 1:</label>
+                <p>${shop.number_1}</p>
+            </div>` : ''}
+            ${shop.number_2 ? `<div class="detail-item">
+                <label>Number 2:</label>
+                <p>${shop.number_2}</p>
+            </div>` : ''}
         </div>
     `;
     
@@ -162,9 +176,9 @@ function displayShopDetails(data) {
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div class="order-amount">₹${order.total.toFixed(2)}</div>
-                        <button class="collect-btn" onclick="collectPayment(${order.id})">
+                        ${isAdmin ? `<button class="collect-btn" onclick="collectPayment(${order.id})">
                             <i class="bi bi-check-circle"></i> Collect
-                        </button>
+                        </button>` : ''}
                     </div>
                 </div>
             `;
@@ -259,5 +273,119 @@ function collectPayment(orderId) {
         alert('Failed to collect payment. Please try again.');
         button.classList.remove('loading');
         button.disabled = false;
+    });
+}
+
+// Open Create Shop Modal
+function openCreateShopModal() {
+    document.getElementById('modalTitle').textContent = 'Create New Shop';
+    document.getElementById('shopForm').reset();
+    document.getElementById('submitBtn').textContent = 'Create';
+    document.getElementById('submitBtn').onclick = saveShop;
+    
+    const modal = new bootstrap.Modal(document.getElementById('shopModal'));
+    modal.show();
+}
+
+// Open Edit Shop Modal
+function openEditShopModal(shopId, name, address, number1, number2) {
+    document.getElementById('modalTitle').textContent = 'Edit Shop Details';
+    document.getElementById('shopName').value = name;
+    document.getElementById('shopAddress').value = address;
+    document.getElementById('shopNumber1').value = number1 || '';
+    document.getElementById('shopNumber2').value = number2 || '';
+    document.getElementById('submitBtn').textContent = 'Update';
+    document.getElementById('submitBtn').onclick = () => updateShop(shopId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('shopModal'));
+    modal.show();
+}
+
+// Save Shop (Create or Update)
+function saveShop() {
+    const name = document.getElementById('shopName').value.trim();
+    const address = document.getElementById('shopAddress').value.trim();
+    const number1 = document.getElementById('shopNumber1').value.trim();
+    const number2 = document.getElementById('shopNumber2').value.trim();
+    
+    if (!name || !address) {
+        alert('Please fill in Shop Name and Address');
+        return;
+    }
+    
+    const shopData = {
+        name: name,
+        address: address,
+        number_1: number1,
+        number_2: number2
+    };
+    
+    fetch('/api/create-shop', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(shopData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to create shop');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Shop created successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('shopModal')).hide();
+        loadShops();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create shop. Please try again.');
+    });
+}
+
+// Update Shop
+function updateShop(shopId) {
+    const name = document.getElementById('shopName').value.trim();
+    const address = document.getElementById('shopAddress').value.trim();
+    const number1 = document.getElementById('shopNumber1').value.trim();
+    const number2 = document.getElementById('shopNumber2').value.trim();
+    
+    if (!name || !address) {
+        alert('Please fill in Shop Name and Address');
+        return;
+    }
+    
+    const shopData = {
+        name: name,
+        address: address,
+        number_1: number1,
+        number_2: number2
+    };
+    
+    fetch(`/api/update-shop/${shopId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(shopData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update shop');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Shop updated successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('shopModal')).hide();
+        loadShops();
+        if (currentShopId) {
+            loadShopDetails(currentShopId);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update shop. Please try again.');
     });
 }

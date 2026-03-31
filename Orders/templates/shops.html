@@ -35,9 +35,20 @@
             </div>
         </div>
 
+        <!-- Store role for JavaScript -->
+        <script>
+            const userRole = "{{ role }}";
+        </script>
+
         <div class="main-wrapper">
             <!-- Left Panel - Shop List -->
             <div class="shop-list-panel">
+                {% if role == 'admin' %}
+                <button id="createShopBtn" class="create-btn" onclick="openCreateShopModal()">
+                    <i class="bi bi-plus-circle"></i> Create New Shop
+                </button>
+                {% endif %}
+                
                 <div class="search-section">
                     <input 
                         type="text" 
@@ -59,6 +70,42 @@
                         <i class="bi bi-inbox"></i>
                         <p>Select a shop to view payment details</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Shop Modal -->
+    <div class="modal fade" id="shopModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Create New Shop</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="shopForm">
+                        <div class="mb-3">
+                            <label for="shopName" class="form-label">Shop Name</label>
+                            <input type="text" class="form-control" id="shopName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="shopAddress" class="form-label">Address</label>
+                            <textarea class="form-control" id="shopAddress" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="shopNumber1" class="form-label">Number 1</label>
+                            <input type="text" class="form-control" id="shopNumber1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="shopNumber2" class="form-label">Number 2</label>
+                            <input type="text" class="form-control" id="shopNumber2">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="submitBtn" onclick="saveShop()">Create</button>
                 </div>
             </div>
         </div>

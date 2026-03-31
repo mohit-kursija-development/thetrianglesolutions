@@ -429,7 +429,7 @@ def shops():
     cur.close()
     conn.close()
     
-    return render_template("shops.html", shops=shops_list, username=session["user"])
+    return render_template("shops.html", shops=shops_list, username=session["user"], role=session.get("role", "sales"))
 
 @app.route("/api/shops-data")
 def get_shops_data():
@@ -441,16 +441,16 @@ def get_shops_data():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Get all shops
-    cur.execute("SELECT id, name, address FROM shops")
+    # Get all shops with all fields
+    cur.execute("SELECT id, name, address, number_1, number_2 FROM shops")
     shops_list = cur.fetchall()
     
     shops_data = []
     for shop in shops_list:
-        shop_id, shop_name, address = shop
+        shop_id, shop_name, address, number_1, number_2 = shop
         
         # Apply search filter
-        if search and search not in shop_name.lower() and search not in location.lower():
+        if search and search not in shop_name.lower() and search not in address.lower():
             continue
         
         # Calculate outstanding payment (unpaid orders)
@@ -479,6 +479,8 @@ def get_shops_data():
             "id": shop_id,
             "name": shop_name,
             "address": address,
+            "number_1": number_1,
+            "number_2": number_2,
             "outstanding": outstanding,
             "paid_orders_count": paid_orders_count
         })
@@ -497,7 +499,7 @@ def get_shop_details(shop_id):
     cur = conn.cursor()
     
     # Get shop info
-    cur.execute("SELECT id, name, address FROM shops WHERE id = %s", (shop_id,))
+    cur.execute("SELECT id, name, address, number_1, number_2 FROM shops WHERE id = %s", (shop_id,))
     shop = cur.fetchone()
     
     if not shop:
@@ -505,7 +507,7 @@ def get_shop_details(shop_id):
         conn.close()
         return {"error": "Shop not found"}, 404
     
-    shop_id, shop_name, address = shop
+    shop_id, shop_name, address, number_1, number_2 = shop
     
     # Get pending orders
     cur.execute("""
@@ -565,6 +567,8 @@ def get_shop_details(shop_id):
             "id": shop_id,
             "name": shop_name,
             "address": address,
+            "number_1": number_1,
+            "number_2": number_2,
         },
         "pending_orders": pending_list,
         "collected_orders": collected_list,
@@ -600,6 +604,87 @@ def collect_payment(order_id):
     conn.close()
     
     return {"success": True, "message": "Payment collected successfully"}
+
+@app.route("/api/create-shop", methods=["POST"])
+def create_shop():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can create shops"}, 403
+    
+    data = request.get_json()
+    
+    if not data or not data.get('name') or not data.get('address'):
+        return {"error": "Shop name and address are required"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO shops (name, address, number_1, number_2)
+            VALUES (%s, %s, %s, %s)
+        """, (data['name'], data['address'], data.get('number_1', ''), data.get('number_2', '')))
+        
+        conn.commit()
+        shop_id = cur.lastrowid
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Shop created successfully", "shop_id": shop_id}, 201
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/update-shop/<int:shop_id>", methods=["PUT"])
+def update_shop(shop_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can edit shops"}, 403
+    
+    data = request.get_json()
+    
+    if not data:
+        return {"error": "No data provided"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Build update query based on provided fields
+        update_fields = []
+        params = []
+        
+        if 'name' in data:
+            update_fields.append("name = %s")
+            params.append(data['name'])
+        if 'address' in data:
+            update_fields.append("address = %s")
+            params.append(data['address'])
+        if 'number_1' in data:
+            update_fields.append("number_1 = %s")
+            params.append(data['number_1'])
+        if 'number_2' in data:
+            update_fields.append("number_2 = %s")
+            params.append(data['number_2'])
+        
+        if not update_fields:
+            return {"error": "No fields to update"}, 400
+        
+        params.append(shop_id)
+        
+        query = f"UPDATE shops SET {', '.join(update_fields)} WHERE id = %s"
+        cur.execute(query, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Shop updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 @app.route("/save_orders")
 def save_orders():
