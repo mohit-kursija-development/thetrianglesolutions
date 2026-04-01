@@ -518,3 +518,42 @@ body {
   color: #666;
   padding: 20px;
 }
+
+/* Out of Stock Styling */
+.stock-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.stock-badge.in-stock {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.stock-badge.out-of-stock {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.product-card.out-of-stock-card {
+  opacity: 0.6;
+  background-color: #f5f5f5;
+}
+
+.qty-btn:disabled,
+.qty-btn.disabled {
+  background-color: #ccc !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.qty-btn:disabled:hover,
+.qty-btn.disabled:hover {
+  background-color: #ccc !important;
+  transform: none !important;
+}

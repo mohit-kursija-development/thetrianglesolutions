@@ -136,28 +136,7 @@ def edit_order(order_id):
     
     return render_template("edit_order.html", order_id=order_id, shops=shops, username=session["user"], role=session.get("role", "sales"))
 
-@app.route("/api/products")
-def get_products():
-    if "user" not in session:
-        return {"error": "Unauthorized"}, 401
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM products")
-    products = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    product_list = []
-    for product in products:
-        product_list.append({
-            "id": product[0],
-            "name": product[1],
-            "mrp": float(product[2]),
-            "price": product[3] if len(product) > 3 else "",
-        })
-    
-    return {"products": product_list}
+
 
 @app.route("/api/get-order/<int:order_id>")
 def get_order(order_id):
@@ -397,6 +376,30 @@ def create_order():
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # Validate stock availability before creating order
+    for item in items:
+        cur.execute(
+            "SELECT stock FROM products WHERE id = %s",
+            (item["product_id"],)
+        )
+        result = cur.fetchone()
+        
+        if not result:
+            cur.close()
+            conn.close()
+            return {"error": f"Product ID {item['product_id']} not found"}, 400
+        
+        available_stock = result[0]
+        if available_stock <= 0:
+            cur.close()
+            conn.close()
+            return {"error": f"No stock available for product ID {item['product_id']}"}, 400
+        
+        if available_stock < item["quantity"]:
+            cur.close()
+            conn.close()
+            return {"error": f"Insufficient stock for product ID {item['product_id']}. Available: {available_stock}, Required: {item['quantity']}"}, 400
+    
     # Insert order
     cur.execute(
         "INSERT INTO orders (user_id, shop_id, created_at) VALUES (%s, %s, NOW())",
@@ -404,11 +407,16 @@ def create_order():
     )
     order_id = cur.lastrowid
     
-    # Insert order items
+    # Insert order items and reduce stock
     for item in items:
         cur.execute(
             "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
             (order_id, item["product_id"], item["quantity"], item["price"])
+        )
+        # Reduce stock after order is created
+        cur.execute(
+            "UPDATE products SET stock = stock - %s WHERE id = %s",
+            (item["quantity"], item["product_id"])
         )
     
     conn.commit()
@@ -1156,6 +1164,248 @@ def format_orders_text(orders, cur, range_label):
     
     return "\n".join(lines)
 
+@app.route("/api/preview-outstanding")
+def preview_outstanding():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Fetch outstanding payments grouped by area code
+    preview_content = format_outstanding_by_area_code(cur)
+    
+    cur.close()
+    conn.close()
+    
+    return preview_content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+@app.route("/api/download-outstanding")
+def download_outstanding():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Create ZIP file with separate files for each area code
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        # Fetch outstanding payments grouped by area code
+        cur.execute("""
+            SELECT DISTINCT COALESCE(ac.code, 'NO_CODE') as area_code,
+                   COALESCE(ac.area_name, 'Unassigned') as area_name
+            FROM shops s
+            LEFT JOIN area_code ac ON s.area_code = ac.code
+            LEFT JOIN orders o ON s.id = o.shop_id AND o.payment_status = 'pending'
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            GROUP BY COALESCE(ac.code, 'NO_CODE'), COALESCE(ac.area_name, 'Unassigned')
+            HAVING SUM(oi.quantity * oi.price) > 0 OR COUNT(DISTINCT o.id) > 0
+            ORDER BY COALESCE(ac.code, 'Z')
+        """)
+        
+        area_codes = cur.fetchall()
+        
+        if not area_codes:
+            # Add a file indicating no outstanding payments
+            content = "NO OUTSTANDING PAYMENTS FOUND"
+            zip_file.writestr("No_Outstanding_Payments.txt", content)
+        else:
+            for area_code, area_name in area_codes:
+                # Format report for each area code
+                content = format_outstanding_for_area_code(area_code, area_name, cur)
+                filename = f"{area_code}_{area_name.replace(' ', '_')}.txt"
+                zip_file.writestr(filename, content)
+    
+    zip_buffer.seek(0)
+    cur.close()
+    conn.close()
+    
+    # Return ZIP file
+    zip_filename = f"Outstanding_Payments_ByAreaCode_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return zip_buffer.getvalue(), 200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': f'attachment; filename="{zip_filename}"'
+    }
+
+def format_outstanding_for_area_code(area_code, area_name, cur):
+    """Format outstanding payments for a specific area code"""
+    lines = []
+    
+    # Header
+    lines.append("=" * 80)
+    lines.append("THE TRIANGLE SOLUTIONS - OUTSTANDING PAYMENTS REPORT".center(80))
+    lines.append(f"AREA CODE: {area_code} - {area_name}".center(80))
+    lines.append(f"Generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}".center(80))
+    lines.append("=" * 80)
+    lines.append("")
+    
+    # Fetch outstanding payments for this area code
+    cur.execute("""
+        SELECT 
+            s.id,
+            s.name as shop_name,
+            s.address,
+            s.number_1,
+            s.number_2,
+            COALESCE(SUM(oi.quantity * oi.price), 0) as outstanding_amount,
+            COUNT(DISTINCT o.id) as pending_orders
+        FROM shops s
+        LEFT JOIN orders o ON s.id = o.shop_id AND o.payment_status = 'pending'
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE COALESCE(s.area_code, 'NO_CODE') = %s OR (s.area_code IS NULL AND %s = 'NO_CODE')
+        GROUP BY s.id, s.name, s.address, s.number_1, s.number_2
+        HAVING outstanding_amount > 0 OR pending_orders > 0
+        ORDER BY s.name
+    """, (area_code if area_code != 'NO_CODE' else None, area_code))
+    
+    results = cur.fetchall()
+    
+    if not results:
+        lines.append("NO OUTSTANDING PAYMENTS FOUND".center(80))
+        lines.append("")
+    else:
+        area_total = 0
+        
+        for result in results:
+            shop_id, shop_name, address, number_1, number_2, outstanding, pending = result
+            outstanding = float(outstanding) if outstanding else 0.0
+            pending = int(pending) if pending else 0
+            
+            # Shop details
+            lines.append(f"SHOP: {shop_name}")
+            if address:
+                address_display = address[:70]
+                lines.append(f"ADDRESS: {address_display}")
+            if number_1:
+                lines.append(f"CONTACT 1: {number_1}")
+            if number_2:
+                lines.append(f"CONTACT 2: {number_2}")
+            
+            lines.append(f"PENDING ORDERS: {pending}  |  OUTSTANDING: ₹{outstanding:,.2f}")
+            lines.append("-" * 80)
+            lines.append("")
+            
+            area_total += outstanding
+        
+        # Print area total
+        lines.append("=" * 80)
+        lines.append(f"{'TOTAL - OUTSTANDING PAYMENTS:':.<55} {f'₹{area_total:,.2f}':>23}")
+        lines.append("=" * 80)
+    
+    lines.append("")
+    lines.append(f"Page generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}")
+    lines.append("=" * 80)
+    
+    return "\n".join(lines)
+
+def format_outstanding_by_area_code(cur):
+    """Format outstanding payments by area code for dot matrix printer"""
+    lines = []
+    
+    # Header
+    lines.append("=" * 80)
+    lines.append("THE TRIANGLE SOLUTIONS - OUTSTANDING PAYMENTS REPORT".center(80))
+    lines.append(f"Generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}".center(80))
+    lines.append("=" * 80)
+    lines.append("")
+    
+    # Fetch outstanding payments grouped by area code
+    cur.execute("""
+        SELECT 
+            COALESCE(ac.code, 'NO CODE') as area_code,
+            COALESCE(ac.area_name, 'Unassigned') as area_name,
+            s.id,
+            s.name as shop_name,
+            s.address,
+            s.number_1,
+            s.number_2,
+            COALESCE(SUM(oi.quantity * oi.price), 0) as outstanding_amount,
+            COUNT(DISTINCT o.id) as pending_orders
+        FROM shops s
+        LEFT JOIN area_code ac ON s.area_code = ac.code
+        LEFT JOIN orders o ON s.id = o.shop_id AND o.payment_status = 'pending'
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        GROUP BY s.id, s.name, s.address, s.number_1, s.number_2, ac.code, ac.area_name
+        HAVING outstanding_amount > 0 OR pending_orders > 0
+        ORDER BY COALESCE(ac.code, 'Z'), s.name
+    """)
+    
+    results = cur.fetchall()
+    
+    if not results:
+        lines.append("NO OUTSTANDING PAYMENTS FOUND".center(80))
+        lines.append("")
+    else:
+        current_area_code = None
+        area_total = 0
+        grand_total = 0
+        
+        for result in results:
+            area_code, area_name, shop_id, shop_name, address, number_1, number_2, outstanding, pending = result
+            area_code = area_code or 'NO CODE'
+            area_name = area_name or 'Unassigned'
+            outstanding = float(outstanding) if outstanding else 0.0
+            pending = int(pending) if pending else 0
+            
+            # Print area code header when it changes
+            if current_area_code != area_code:
+                if current_area_code is not None:
+                    # Print area total
+                    lines.append("-" * 80)
+                    lines.append(f"{f'AREA TOTAL ({current_area_code}):':.<55} {f'₹{area_total:,.2f}':>23}")
+                    lines.append("")
+                
+                # New area code section
+                lines.append("=" * 80)
+                lines.append(f"AREA CODE: {area_code} - {area_name}")
+                lines.append("=" * 80)
+                lines.append("")
+                
+                current_area_code = area_code
+                area_total = 0
+            
+            # Shop details
+            lines.append(f"SHOP: {shop_name}")
+            if address:
+                address_display = address[:70]
+                lines.append(f"ADDRESS: {address_display}")
+            if number_1:
+                lines.append(f"CONTACT 1: {number_1}")
+            if number_2:
+                lines.append(f"CONTACT 2: {number_2}")
+            
+            lines.append(f"PENDING ORDERS: {pending}  |  OUTSTANDING: ₹{outstanding:,.2f}")
+            lines.append("-" * 80)
+            lines.append("")
+            
+            area_total += outstanding
+            grand_total += outstanding
+        
+        # Print last area total
+        if current_area_code is not None:
+            lines.append("-" * 80)
+            lines.append(f"{f'AREA TOTAL ({current_area_code}):':.<55} {f'₹{area_total:,.2f}':>23}")
+            lines.append("")
+        
+        # Grand totals
+        lines.append("=" * 80)
+        lines.append(f"{'GRAND TOTAL - ALL OUTSTANDING PAYMENTS:':.<55} {f'₹{grand_total:,.2f}':>23}")
+        lines.append("=" * 80)
+    
+    lines.append("")
+    lines.append(f"Page generated: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}")
+    lines.append("=" * 80)
+    
+    return "\n".join(lines)
+
 # def format_orders_csv(orders, cur, range_label):
 #     """Format orders as CSV for Excel"""
 #     output = io.StringIO()
@@ -1219,6 +1469,359 @@ def format_orders_text(orders, cur, range_label):
 #                 ])
     
 #     return output.getvalue()
+
+# ==================== PRODUCTS MANAGEMENT ====================
+
+@app.route("/products")
+def products():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    if session.get("role") != "admin":
+        return redirect(url_for("orders"))
+    
+    return render_template("products.html", username=session["user"], role=session.get("role", "sales"))
+
+@app.route("/api/products")
+def get_products_list():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT id, name, stock, mrp, price, created_at, updated_at
+        FROM products
+        ORDER BY name ASC
+    """)
+    
+    products = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    product_list = []
+    for product in products:
+        product_list.append({
+            "id": product[0],
+            "name": product[1],
+            "stock": int(product[2]),
+            "mrp": float(product[3]),
+            "price": float(product[4]),
+            "created_at": product[5].isoformat() if product[5] else None,
+            "updated_at": product[6].isoformat() if product[6] else None
+        })
+    
+    return {"products": product_list}
+
+@app.route("/api/create-product", methods=["POST"])
+def create_product():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can create products"}, 403
+    
+    data = request.get_json()
+    
+    if not data or not data.get('name') or not data.get('stock') or not data.get('mrp') or not data.get('price'):
+        return {"error": "All fields are required"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO products (name, stock, mrp, price, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, NOW(), NOW())
+        """, (data['name'], int(data['stock']), float(data['mrp']), float(data['price'])))
+        
+        conn.commit()
+        product_id = cur.lastrowid
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Product created successfully", "product_id": product_id}, 201
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/update-product/<int:product_id>", methods=["PUT"])
+def update_product(product_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can edit products"}, 403
+    
+    data = request.get_json()
+    
+    if not data:
+        return {"error": "No data provided"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        update_fields = []
+        params = []
+        
+        if 'name' in data:
+            update_fields.append("name = %s")
+            params.append(data['name'])
+        if 'stock' in data:
+            update_fields.append("stock = %s")
+            params.append(int(data['stock']))
+        if 'mrp' in data:
+            update_fields.append("mrp = %s")
+            params.append(float(data['mrp']))
+        if 'price' in data:
+            update_fields.append("price = %s")
+            params.append(float(data['price']))
+        
+        if not update_fields:
+            return {"error": "No fields to update"}, 400
+        
+        update_fields.append("updated_at = NOW()")
+        params.append(product_id)
+        
+        query = f"UPDATE products SET {', '.join(update_fields)} WHERE id = %s"
+        cur.execute(query, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Product updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/delete-product/<int:product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can delete products"}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("DELETE FROM products WHERE id = %s", (product_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Product deleted successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+# ==================== PURCHASES/INVENTORY MANAGEMENT ====================
+
+@app.route("/purchases")
+def purchases():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    
+    if session.get("role") != "admin":
+        return redirect(url_for("orders"))
+    
+    return render_template("purchases.html", username=session["user"], role=session.get("role", "sales"))
+
+@app.route("/api/purchases")
+def get_purchases_list():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can view purchases"}, 403
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT p.id, p.product_id, pr.name as product_name, p.quantity, p.cost_per_unit, 
+               (p.quantity * p.cost_per_unit) as total_cost, p.purchase_date, p.notes
+        FROM purchases p
+        JOIN products pr ON p.product_id = pr.id
+        ORDER BY p.purchase_date DESC
+    """)
+    
+    purchases = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    purchase_list = []
+    for purchase in purchases:
+        purchase_list.append({
+            "id": purchase[0],
+            "product_id": purchase[1],
+            "product_name": purchase[2],
+            "quantity": int(purchase[3]),
+            "cost_per_unit": float(purchase[4]),
+            "total_cost": float(purchase[5]),
+            "purchase_date": purchase[6].isoformat() if purchase[6] else None,
+            "notes": purchase[7]
+        })
+    
+    return {"purchases": purchase_list}
+
+@app.route("/api/create-purchase", methods=["POST"])
+def create_purchase():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can create purchases"}, 403
+    
+    data = request.get_json()
+    
+    if not data or not data.get('product_id') or not data.get('quantity') or not data.get('cost_per_unit'):
+        return {"error": "product_id, quantity, and cost_per_unit are required"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verify product exists
+        cur.execute("SELECT id FROM products WHERE id = %s", (data['product_id'],))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {"error": "Product not found"}, 404
+        
+        # Insert purchase record
+        cur.execute("""
+            INSERT INTO purchases (product_id, quantity, cost_per_unit, purchase_date, notes)
+            VALUES (%s, %s, %s, NOW(), %s)
+        """, (data['product_id'], int(data['quantity']), float(data['cost_per_unit']), data.get('notes', '')))
+        
+        purchase_id = cur.lastrowid
+        
+        # Update product stock
+        cur.execute(
+            "UPDATE products SET stock = stock + %s WHERE id = %s",
+            (int(data['quantity']), data['product_id'])
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Purchase recorded successfully", "purchase_id": purchase_id}, 201
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/update-purchase/<int:purchase_id>", methods=["PUT"])
+def update_purchase(purchase_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can edit purchases"}, 403
+    
+    data = request.get_json()
+    
+    if not data:
+        return {"error": "No data provided"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get current purchase details
+        cur.execute(
+            "SELECT product_id, quantity FROM purchases WHERE id = %s",
+            (purchase_id,)
+        )
+        result = cur.fetchone()
+        
+        if not result:
+            cur.close()
+            conn.close()
+            return {"error": "Purchase not found"}, 404
+        
+        old_quantity = result[1]
+        new_quantity = int(data.get('quantity', old_quantity))
+        
+        # If quantity changed, update product stock
+        if 'quantity' in data:
+            quantity_diff = new_quantity - old_quantity
+            cur.execute(
+                "UPDATE products SET stock = stock + %s WHERE id = %s",
+                (quantity_diff, result[0])
+            )
+        
+        # Update purchase record
+        update_fields = []
+        params = []
+        
+        if 'quantity' in data:
+            update_fields.append("quantity = %s")
+            params.append(int(data['quantity']))
+        if 'cost_per_unit' in data:
+            update_fields.append("cost_per_unit = %s")
+            params.append(float(data['cost_per_unit']))
+        if 'notes' in data:
+            update_fields.append("notes = %s")
+            params.append(data['notes'])
+        
+        if not update_fields:
+            cur.close()
+            conn.close()
+            return {"error": "No fields to update"}, 400
+        
+        params.append(purchase_id)
+        query = f"UPDATE purchases SET {', '.join(update_fields)} WHERE id = %s"
+        cur.execute(query, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Purchase updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/delete-purchase/<int:purchase_id>", methods=["DELETE"])
+def delete_purchase(purchase_id):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can delete purchases"}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get purchase details to refund stock
+        cur.execute(
+            "SELECT product_id, quantity FROM purchases WHERE id = %s",
+            (purchase_id,)
+        )
+        result = cur.fetchone()
+        
+        if not result:
+            cur.close()
+            conn.close()
+            return {"error": "Purchase not found"}, 404
+        
+        # Reduce product stock by the purchased quantity
+        cur.execute(
+            "UPDATE products SET stock = stock - %s WHERE id = %s",
+            (result[1], result[0])
+        )
+        
+        # Delete purchase record
+        cur.execute("DELETE FROM purchases WHERE id = %s", (purchase_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Purchase deleted successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 if __name__ == "__main__":
     app.run(debug=True)

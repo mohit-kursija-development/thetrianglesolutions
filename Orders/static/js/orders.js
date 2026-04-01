@@ -108,13 +108,19 @@ function displayProducts(products) {
     let html = '<div class="products-grid">';
     
     products.forEach(product => {
+        const isOutOfStock = !product.stock || product.stock <= 0;
+        const stockStatus = isOutOfStock ? '<span class="stock-badge out-of-stock">OUT OF STOCK</span>' : `<span class="stock-badge in-stock">Stock: ${product.stock}</span>`;
+        
         html += `
-            <div class="product-card">
+            <div class="product-card ${isOutOfStock ? 'out-of-stock-card' : ''}">
                 <div class="product-name">${product.name}</div>
                 <div class="product-price" id="price-${product.id}">₹${product.price.toFixed(2)}</div>
+                <div class="product-stock">${stockStatus}</div>
                 <div class="quantity-buttons">
                     ${[1, 3, 5, 10, 20].map(qty => `
-                        <button class="qty-btn" onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})">
+                        <button class="qty-btn ${isOutOfStock ? 'disabled' : ''}" 
+                                onclick="addToCart(${product.id}, ${qty}, '${product.name}', ${product.price}, ${product.stock})"
+                                ${isOutOfStock ? 'disabled' : ''}>
                             ${qty} 
                         </button>
                     `).join('')}
@@ -151,6 +157,20 @@ function updateProductPrice(productId, newPrice) {
 function addToCart(productId, quantity, productName, basePrice, stock) {
     const $priceInput = $(`#price-input-${productId}`);
     const actualPrice = $priceInput.length ? parseFloat($priceInput.val()) : basePrice;
+
+    // Validate stock availability
+    if (!stock || stock <= 0) {
+        alert(`❌ No stock available for "${productName}". Please contact admin.`);
+        return;
+    }
+
+    const currentQuantityInCart = cart[productId] ? cart[productId].quantity : 0;
+    const totalQuantity = currentQuantityInCart + quantity;
+
+    if (totalQuantity > stock) {
+        alert(`❌ Insufficient stock for "${productName}". Available: ${stock}, Requested: ${totalQuantity}`);
+        return;
+    }
 
     if (cart[productId]) {
         cart[productId].quantity += quantity;

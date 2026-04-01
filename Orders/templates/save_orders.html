@@ -102,6 +102,34 @@
                 <div id="previewContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></div>
             </div>
         </div>
+
+        <!-- Outstanding Payments Section -->
+        <div class="download-section" style="margin-top: 40px;">
+            <div class="download-title"><i class="bi bi-exclamation-circle"></i> Outstanding Payments by Area Code</div>
+            
+            <div style="padding: 15px; background-color: #fff3cd; border-radius: 6px; color: #856404; margin-bottom: 20px;">
+                <strong>💰 Download Outstanding Payments Report</strong>
+                <br><small style="margin-top: 8px; display: block;">Download a report of all shops with pending payments organized by area code, formatted for dot-matrix printers.</small>
+            </div>
+
+            <!-- Buttons -->
+            <div class="download-buttons">
+                <button type="button" class="preview-btn" onclick="previewOutstanding()">
+                    <i class="bi bi-eye"></i> Preview Report
+                </button>
+                <button type="button" class="download-btn" onclick="downloadOutstanding()">
+                    <i class="bi bi-download"></i> Download Report
+                </button>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewOutstandingSection">
+                <div style="margin-bottom: 10px; padding: 10px; background-color: #fff3cd; border-radius: 4px; font-size: 12px;">
+                    <strong>Preview (Outstanding Payments Report):</strong> This shows how the outstanding payments report will be formatted.
+                </div>
+                <div id="previewOutstandingContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></div>
+            </div>
+        </div>
     </div>
 
     <!-- jQuery -->
@@ -185,6 +213,57 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('❌ Error downloading orders: ' + error.message);
+            }
+        }
+
+        // Outstanding Payments Functions
+        async function previewOutstanding() {
+            try {
+                const response = await fetch('/api/preview-outstanding');
+                const data = await response.text();
+
+                if (data.includes('Error') || data.includes('error') || response.status !== 200) {
+                    $('#previewOutstandingContent').text('Error: ' + data);
+                } else {
+                    $('#previewOutstandingContent').text(data);
+                }
+
+                document.getElementById('previewOutstandingSection').classList.add('active');
+                document.getElementById('previewOutstandingSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error:', error);
+                $('#previewOutstandingContent').text('Error loading preview: ' + error.message);
+                document.getElementById('previewOutstandingSection').classList.add('active');
+            }
+        }
+
+        async function downloadOutstanding() {
+            try {
+                const response = await fetch('/api/download-outstanding');
+                
+                if (!response.ok) {
+                    alert('❌ Error downloading outstanding report: ' + response.statusText);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                a.download = `outstanding_payments_${dateStr}.txt`;
+
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                alert('✅ Outstanding payments report downloaded successfully! Ready for printing.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error downloading report: ' + error.message);
             }
         }
     </script>
