@@ -29,6 +29,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('shops') }}">Shops</a>
                     </li>
+                    {% if role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('products') }}">Products</a>
                     </li>
@@ -38,6 +39,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('save_orders') }}">Download Orders</a>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('logout') }}">Logout ({{ username }})</a>
                     </li>

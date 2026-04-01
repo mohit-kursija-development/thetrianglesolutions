@@ -26,7 +26,12 @@
                     <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
                         <a href="{{ url_for('orders') }}" class="new-order-btn"><i class="bi bi-plus-circle"></i> New Order</a>
                         <a href="{{ url_for('past_orders') }}" class="new-order-btn"><i class="bi bi-clock-history"></i> Past Orders</a>
+                        <a href="{{ url_for('shops') }}" class="new-order-btn"><i class="bi bi-shop"></i> Shops</a>
+                        {% if role == 'admin' %}
+                        <a href="{{ url_for('products') }}" class="new-order-btn"><i class="bi bi-box"></i> Products</a>
+                        <a href="{{ url_for('purchases') }}" class="new-order-btn"><i class="bi bi-cart-plus"></i> Purchases</a>
                         <a href="{{ url_for('sales') }}" class="new-order-btn"><i class="bi bi-graph-up"></i> Sales</a>
+                        {% endif %}
                         <a href="{{ url_for('logout') }}" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
                     </div>
                 </div>

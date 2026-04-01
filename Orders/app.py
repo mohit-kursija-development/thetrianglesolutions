@@ -23,7 +23,7 @@ app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 # Create connection pool
 db_pool = pooling.MySQLConnectionPool(
     pool_name="mypool",
-    pool_size=5,
+    pool_size=15,
     host=os.getenv("MYSQL_HOST"),
     user=os.getenv("MYSQL_USER"),
     password=os.getenv("MYSQL_PASSWORD"),
@@ -1683,18 +1683,22 @@ def create_purchase():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Verify product exists
-        cur.execute("SELECT id FROM products WHERE id = %s", (data['product_id'],))
-        if not cur.fetchone():
+        # Verify product exists and get product name
+        cur.execute("SELECT id, name FROM products WHERE id = %s", (data['product_id'],))
+        product = cur.fetchone()
+        if not product:
             cur.close()
             conn.close()
             return {"error": "Product not found"}, 404
         
+        product_name = product[1]
+        total_cost = int(data['quantity']) * float(data['cost_per_unit'])
+        
         # Insert purchase record
         cur.execute("""
-            INSERT INTO purchases (product_id, quantity, cost_per_unit, purchase_date, notes)
-            VALUES (%s, %s, %s, NOW(), %s)
-        """, (data['product_id'], int(data['quantity']), float(data['cost_per_unit']), data.get('notes', '')))
+            INSERT INTO purchases (product_id, product_name, quantity, cost_per_unit, total_cost, purchase_date, notes)
+            VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+        """, (data['product_id'], product_name, int(data['quantity']), float(data['cost_per_unit']), total_cost, data.get('notes', '')))
         
         purchase_id = cur.lastrowid
         
