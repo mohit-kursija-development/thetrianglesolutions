@@ -507,6 +507,105 @@ body {
     word-break: break-word;
 }
 
+/* Manage Button */
+.manage-btn {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.manage-btn:hover {
+    background-color: #2980b9;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.manage-btn:active {
+    transform: scale(0.98);
+}
+
+/* Area Code Sidebar Styling */
+.offcanvas {
+    width: 400px !important;
+}
+
+.offcanvas-header {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.offcanvas-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.offcanvas-body {
+    padding: 20px;
+}
+
+/* Area Code Items */
+.area-codes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.area-code-item {
+    background-color: #f9fafb;
+    border: 1px solid var(--light-bg);
+    padding: 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.area-code-item:hover {
+    border-color: var(--secondary-color);
+    background-color: #f0f7ff;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.1);
+}
+
+.area-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.area-code-header strong {
+    color: var(--primary-color);
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.area-code-item small {
+    color: var(--text-dark);
+    display: block;
+}
+
+.area-code-header .btn-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    padding: 0;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.area-code-header .btn-link:hover {
+    color: var(--primary-color);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .main-wrapper {

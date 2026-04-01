@@ -441,13 +441,17 @@ def get_shops_data():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Get all shops with all fields
-    cur.execute("SELECT id, name, address, number_1, number_2 FROM shops")
+    # Get all shops with all fields including area code
+    cur.execute("""
+        SELECT s.id, s.name, s.address, s.number_1, s.number_2, s.area_code, ac.area_name as area_name
+        FROM shops s
+        LEFT JOIN area_code ac ON s.area_code = ac.code
+    """)
     shops_list = cur.fetchall()
     
     shops_data = []
     for shop in shops_list:
-        shop_id, shop_name, address, number_1, number_2 = shop
+        shop_id, shop_name, address, number_1, number_2, area_code, area_name = shop
         
         # Apply search filter
         if search and search not in shop_name.lower() and search not in address.lower():
@@ -479,6 +483,8 @@ def get_shops_data():
             "id": shop_id,
             "name": shop_name,
             "address": address,
+            "area_code": area_code,
+            "area_name": area_name,
             "number_1": number_1,
             "number_2": number_2,
             "outstanding": outstanding,
@@ -498,8 +504,13 @@ def get_shop_details(shop_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Get shop info
-    cur.execute("SELECT id, name, address, number_1, number_2 FROM shops WHERE id = %s", (shop_id,))
+    # Get shop info with area code
+    cur.execute("""
+        SELECT s.id, s.name, s.address, s.number_1, s.number_2, s.area_code, ac.area_name as area_name
+        FROM shops s
+        LEFT JOIN area_code ac ON s.area_code = ac.code
+        WHERE s.id = %s
+    """, (shop_id,))
     shop = cur.fetchone()
     
     if not shop:
@@ -507,7 +518,7 @@ def get_shop_details(shop_id):
         conn.close()
         return {"error": "Shop not found"}, 404
     
-    shop_id, shop_name, address, number_1, number_2 = shop
+    shop_id, shop_name, address, number_1, number_2, area_code, area_name = shop
     
     # Get pending orders
     cur.execute("""
@@ -567,6 +578,8 @@ def get_shop_details(shop_id):
             "id": shop_id,
             "name": shop_name,
             "address": address,
+            "area_code": area_code,
+            "area_name": area_name,
             "number_1": number_1,
             "number_2": number_2,
         },
@@ -622,10 +635,12 @@ def create_shop():
         conn = get_db_connection()
         cur = conn.cursor()
         
+        area_code = data.get('area_code') if data.get('area_code') else None
+        
         cur.execute("""
-            INSERT INTO shops (name, address, number_1, number_2)
-            VALUES (%s, %s, %s, %s)
-        """, (data['name'], data['address'], data.get('number_1', ''), data.get('number_2', '')))
+            INSERT INTO shops (name, address, area_code, number_1, number_2)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (data['name'], data['address'], area_code, data.get('number_1', ''), data.get('number_2', '')))
         
         conn.commit()
         shop_id = cur.lastrowid
@@ -663,6 +678,9 @@ def update_shop(shop_id):
         if 'address' in data:
             update_fields.append("address = %s")
             params.append(data['address'])
+        if 'area_code' in data:
+            update_fields.append("area_code = %s")
+            params.append(data['area_code'] if data['area_code'] else None)
         if 'number_1' in data:
             update_fields.append("number_1 = %s")
             params.append(data['number_1'])
@@ -683,6 +701,97 @@ def update_shop(shop_id):
         conn.close()
         
         return {"success": True, "message": "Shop updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/api/area-codes")
+def get_area_codes():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT code, area_name FROM area_code ORDER BY code ASC")
+    area_codes = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    area_code_list = []
+    for code, area_name in area_codes:
+        area_code_list.append({
+            "code": code,
+            "area_name": area_name
+        })
+    
+    return {"area_codes": area_code_list}
+
+@app.route("/api/create-area-code", methods=["POST"])
+def create_area_code():
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can create area codes"}, 403
+    
+    data = request.get_json()
+    
+    if not data or not data.get('code') or not data.get('area_name'):
+        return {"error": "Area code and name are required"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        code = data['code'].strip().upper()
+        area_name = data['area_name'].strip()
+        
+        cur.execute("""
+            INSERT INTO area_code (code, area_name)
+            VALUES (%s, %s)
+        """, (code, area_name))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Area code created successfully"}, 201
+    except Exception as e:
+        # Check if it's a duplicate key error
+        if "Duplicate entry" in str(e):
+            return {"error": "Area code already exists"}, 409
+        return {"error": str(e)}, 500
+
+@app.route("/api/update-area-code/<code>", methods=["PUT"])
+def update_area_code(code):
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+    
+    if session.get("role") != "admin":
+        return {"error": "Only admin can update area codes"}, 403
+    
+    data = request.get_json()
+    
+    if not data or not data.get('area_name'):
+        return {"error": "Area name is required"}, 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        area_name = data['area_name'].strip()
+        
+        cur.execute("""
+            UPDATE area_code
+            SET area_name = %s
+            WHERE code = %s
+        """, (area_name, code.upper()))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"success": True, "message": "Area code updated successfully"}
     except Exception as e:
         return {"error": str(e)}, 500
 

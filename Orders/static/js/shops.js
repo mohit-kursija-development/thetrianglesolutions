@@ -1,10 +1,12 @@
 // Shops JavaScript
 
 let allShops = [];
+let allAreaCodes = [];
 let currentShopId = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    loadAreaCodes();
     loadShops();
     
     // Setup search
@@ -32,6 +34,49 @@ function loadShops() {
             document.getElementById('shopsContainer').innerHTML = 
                 '<div class="loading-message">Error loading shops. Please refresh the page.</div>';
         });
+}
+
+// Load all area codes from API
+function loadAreaCodes() {
+    fetch('/api/area-codes')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load area codes');
+            }
+            return response.json();
+        })
+        .then(data => {
+            allAreaCodes = data.area_codes || [];
+            populateAreaCodeDropdown();
+            if (userRole === 'admin') {
+                displayAreaCodes();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading area codes:', error);
+        });
+}
+
+// Populate area code dropdown
+function populateAreaCodeDropdown() {
+    const dropdown = document.getElementById('shopAreaCode');
+    if (!dropdown) return;
+    
+    const currentValue = dropdown.value;
+    
+    // Keep the first option (empty)
+    dropdown.innerHTML = '<option value="">-- Select Area Code --</option>';
+    
+    allAreaCodes.forEach(areaCode => {
+        const option = document.createElement('option');
+        option.value = areaCode.code;
+        option.textContent = `${areaCode.code} - ${areaCode.area_name}`;
+        dropdown.appendChild(option);
+    });
+    
+    if (currentValue) {
+        dropdown.value = currentValue;
+    }
 }
 
 // Display shops in the list
@@ -116,7 +161,7 @@ function displayShopDetails(data) {
                 <i class="bi bi-shop"></i>
                 <h3>${shop.name}</h3>
             </div>
-            ${isAdmin ? `<button class="btn btn-sm btn-primary" onclick="openEditShopModal(${shop.id}, '${shop.name}', '${shop.address}', '${shop.number_1 || ''}', '${shop.number_2 || ''}')"><i class="bi bi-pencil"></i> Edit Shop Details</button>` : ''}
+            ${isAdmin ? `<button class="btn btn-sm btn-primary" onclick="openEditShopModal(${shop.id})"><i class="bi bi-pencil"></i> Edit Shop Details</button>` : ''}
         </div>
         
         <div class="shop-details-section">
@@ -124,6 +169,10 @@ function displayShopDetails(data) {
                 <label>Address:</label>
                 <p>${shop.address}</p>
             </div>
+            ${shop.area_code ? `<div class="detail-item">
+                <label>Area Code:</label>
+                <p>${shop.area_code} ${shop.area_name ? `- ${shop.area_name}` : ''}</p>
+            </div>` : ''}
             ${shop.number_1 ? `<div class="detail-item">
                 <label>Number 1:</label>
                 <p>${shop.number_1}</p>
@@ -288,12 +337,20 @@ function openCreateShopModal() {
 }
 
 // Open Edit Shop Modal
-function openEditShopModal(shopId, name, address, number1, number2) {
+function openEditShopModal(shopId) {
+    // Get the shop data from allShops array
+    const shop = allShops.find(s => s.id === shopId);
+    if (!shop) {
+        alert('Shop not found');
+        return;
+    }
+    
     document.getElementById('modalTitle').textContent = 'Edit Shop Details';
-    document.getElementById('shopName').value = name;
-    document.getElementById('shopAddress').value = address;
-    document.getElementById('shopNumber1').value = number1 || '';
-    document.getElementById('shopNumber2').value = number2 || '';
+    document.getElementById('shopName').value = shop.name;
+    document.getElementById('shopAddress').value = shop.address;
+    document.getElementById('shopAreaCode').value = shop.area_code || '';
+    document.getElementById('shopNumber1').value = shop.number_1 || '';
+    document.getElementById('shopNumber2').value = shop.number_2 || '';
     document.getElementById('submitBtn').textContent = 'Update';
     document.getElementById('submitBtn').onclick = () => updateShop(shopId);
     
@@ -305,6 +362,7 @@ function openEditShopModal(shopId, name, address, number1, number2) {
 function saveShop() {
     const name = document.getElementById('shopName').value.trim();
     const address = document.getElementById('shopAddress').value.trim();
+    const areaCode = document.getElementById('shopAreaCode').value.trim();
     const number1 = document.getElementById('shopNumber1').value.trim();
     const number2 = document.getElementById('shopNumber2').value.trim();
     
@@ -316,6 +374,7 @@ function saveShop() {
     const shopData = {
         name: name,
         address: address,
+        area_code: areaCode || null,
         number_1: number1,
         number_2: number2
     };
@@ -348,6 +407,7 @@ function saveShop() {
 function updateShop(shopId) {
     const name = document.getElementById('shopName').value.trim();
     const address = document.getElementById('shopAddress').value.trim();
+    const areaCode = document.getElementById('shopAreaCode').value.trim();
     const number1 = document.getElementById('shopNumber1').value.trim();
     const number2 = document.getElementById('shopNumber2').value.trim();
     
@@ -359,6 +419,7 @@ function updateShop(shopId) {
     const shopData = {
         name: name,
         address: address,
+        area_code: areaCode || null,
         number_1: number1,
         number_2: number2
     };
@@ -387,5 +448,143 @@ function updateShop(shopId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to update shop. Please try again.');
+    });
+}
+
+// Open Area Code Panel (Sidebar)
+function openAreaCodePanel() {
+    const offcanvas = new bootstrap.Offcanvas(document.getElementById('areaCodePanel'));
+    offcanvas.show();
+}
+
+// Display area codes in the sidebar
+function displayAreaCodes() {
+    const container = document.getElementById('areaCodesList');
+    
+    if (allAreaCodes.length === 0) {
+        container.innerHTML = '<div class="text-muted">No area codes created yet</div>';
+        return;
+    }
+    
+    container.innerHTML = allAreaCodes.map(areaCode => `
+        <div class="area-code-item">
+            <div class="area-code-header">
+                <strong>${areaCode.code}</strong>
+                <button class="btn btn-sm btn-link edit-area-code-btn" data-code="${areaCode.code}" data-name="${areaCode.area_name}">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+            <small>${areaCode.area_name}</small>
+        </div>
+    `).join('');
+    
+    // Add event listeners to edit buttons
+    document.querySelectorAll('.edit-area-code-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const code = this.dataset.code;
+            const area_name = this.dataset.area_name;
+            openEditAreaCodeModal(code, area_name);
+        });
+    });
+}
+
+// Open Create Area Code Modal
+function openCreateAreaCodeModal() {
+    document.getElementById('areaCodeModalTitle').textContent = 'Create Area Code';
+    document.getElementById('areaCodeForm').reset();
+    document.getElementById('areaCodeInput').disabled = false;
+    document.getElementById('areaCodeSubmitBtn').textContent = 'Create';
+    document.getElementById('areaCodeSubmitBtn').onclick = saveAreaCode;
+    
+    const modal = new bootstrap.Modal(document.getElementById('areaCodeModal'));
+    modal.show();
+}
+
+// Open Edit Area Code Modal
+function openEditAreaCodeModal(code, area_name) {
+    document.getElementById('areaCodeModalTitle').textContent = 'Edit Area Code';
+    document.getElementById('areaCodeInput').value = code;
+    document.getElementById('areaCodeName').value = area_name;
+    document.getElementById('areaCodeInput').disabled = true;
+    document.getElementById('areaCodeSubmitBtn').textContent = 'Update';
+    document.getElementById('areaCodeSubmitBtn').onclick = () => updateAreaCode(code);
+    
+    const modal = new bootstrap.Modal(document.getElementById('areaCodeModal'));
+    modal.show();
+}
+
+// Save Area Code (Create)
+function saveAreaCode() {
+    const code = document.getElementById('areaCodeInput').value.trim().toUpperCase();
+    const area_name = document.getElementById('areaCodeName').value.trim();
+    
+    if (!code || !area_name) {
+        alert('Please fill in both Area Code and Name');
+        return;
+    }
+    
+    const areaCodeData = {
+        code: code,
+        area_name: area_name
+    };
+    
+    fetch('/api/create-area-code', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(areaCodeData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to create area code');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Area code created successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('areaCodeModal')).hide();
+        loadAreaCodes();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create area code. It may already exist.');
+    });
+}
+
+// Update Area Code
+function updateAreaCode(code) {
+    const area_name = document.getElementById('areaCodeName').value.trim();
+    
+    if (!area_name) {
+        alert('Please fill in the Area Name');
+        return;
+    }
+    
+    const areaCodeData = {
+        area_name: area_name
+    };
+    
+    fetch(`/api/update-area-code/${code}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(areaCodeData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update area code');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Area code updated successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('areaCodeModal')).hide();
+        loadAreaCodes();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update area code. Please try again.');
     });
 }

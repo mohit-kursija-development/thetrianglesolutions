@@ -47,6 +47,9 @@
                 <button id="createShopBtn" class="create-btn" onclick="openCreateShopModal()">
                     <i class="bi bi-plus-circle"></i> Create New Shop
                 </button>
+                <button id="manageAreaCodeBtn" class="manage-btn" onclick="openAreaCodePanel()">
+                    <i class="bi bi-gear"></i> Manage Area Codes
+                </button>
                 {% endif %}
                 
                 <div class="search-section">
@@ -94,6 +97,12 @@
                             <textarea class="form-control" id="shopAddress" rows="3" required></textarea>
                         </div>
                         <div class="mb-3">
+                            <label for="shopAreaCode" class="form-label">Area Code</label>
+                            <select class="form-control" id="shopAreaCode">
+                                <option value="">-- Select Area Code --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label for="shopNumber1" class="form-label">Number 1</label>
                             <input type="text" class="form-control" id="shopNumber1">
                         </div>
@@ -110,6 +119,55 @@
             </div>
         </div>
     </div>
+
+    <!-- Area Code Management Modal (Admin Only) -->
+    {% if role == 'admin' %}
+    <div class="modal fade" id="areaCodeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="areaCodeModalTitle">Create Area Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="areaCodeForm">
+                        <div class="mb-3">
+                            <label for="areaCodeInput" class="form-label">Area Code (e.g., AG)</label>
+                            <input type="text" class="form-control" id="areaCodeInput" maxlength="10" required>
+                            <small class="text-muted">Primary key - Cannot be changed after creation</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="areaCodeName" class="form-label">Area Name (e.g., Asela Gaon)</label>
+                            <input type="text" class="form-control" id="areaCodeName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="areaCodeSubmitBtn" onclick="saveAreaCode()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area Code Management Panel -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="areaCodePanel" aria-labelledby="areaCodePanelLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="areaCodePanelLabel">Manage Area Codes</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-sm btn-success" onclick="openCreateAreaCodeModal()">
+                    <i class="bi bi-plus-circle"></i> Add Area Code
+                </button>
+            </div>
+            <div id="areaCodesList" class="area-codes-list">
+                <div class="text-muted">Loading area codes...</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
