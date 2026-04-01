@@ -1198,42 +1198,30 @@ def download_outstanding():
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        # Fetch outstanding payments grouped by area code
-        cur.execute("""
-            SELECT DISTINCT COALESCE(ac.code, 'NO_CODE') as area_code,
-                   COALESCE(ac.area_name, 'Unassigned') as area_name
-            FROM shops s
-            LEFT JOIN area_code ac ON s.area_code = ac.code
-            LEFT JOIN orders o ON s.id = o.shop_id AND o.payment_status = 'pending'
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            GROUP BY COALESCE(ac.code, 'NO_CODE'), COALESCE(ac.area_name, 'Unassigned')
-            HAVING SUM(oi.quantity * oi.price) > 0 OR COUNT(DISTINCT o.id) > 0
-            ORDER BY COALESCE(ac.code, 'Z')
-        """)
-        
+        # Fetch distinct area codes
+        cur.execute("SELECT code, area_name FROM area_code ORDER BY code ASC")
         area_codes = cur.fetchall()
         
-        if not area_codes:
-            # Add a file indicating no outstanding payments
-            content = "NO OUTSTANDING PAYMENTS FOUND"
-            zip_file.writestr("No_Outstanding_Payments.txt", content)
-        else:
-            for area_code, area_name in area_codes:
-                # Format report for each area code
-                content = format_outstanding_for_area_code(area_code, area_name, cur)
-                filename = f"{area_code}_{area_name.replace(' ', '_')}.txt"
-                zip_file.writestr(filename, content)
-    
+        # Add a file for each area code
+        for area_code, area_name in area_codes:
+            content = format_outstanding_for_area_code(area_code, area_name, cur)
+            filename = f"Outstanding_{area_code}_{datetime.now().strftime('%Y%m%d')}.txt"
+            zip_file.writestr(filename, content)
+        
+        # Add a file for shops without area code
+        content = format_outstanding_for_area_code('NO_CODE', 'Unassigned', cur)
+        filename = f"Outstanding_NO_CODE_{datetime.now().strftime('%Y%m%d')}.txt"
+        zip_file.writestr(filename, content)
     zip_buffer.seek(0)
     cur.close()
-    conn.close()
-    
+    conn.close()    
     # Return ZIP file
-    zip_filename = f"Outstanding_Payments_ByAreaCode_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    zip_filename = f"Outstanding_Payments_{datetime.now().strftime('%Y%m%d')}.zip"
     return zip_buffer.getvalue(), 200, {
         'Content-Type': 'application/zip',
         'Content-Disposition': f'attachment; filename="{zip_filename}"'
     }
+    
 
 def format_outstanding_for_area_code(area_code, area_name, cur):
     """Format outstanding payments for a specific area code"""

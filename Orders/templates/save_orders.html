@@ -246,26 +246,25 @@
             try {
                 const response = await fetch('/api/download-outstanding');
                 
+                // Download outstanding ZIP files separated by area code
                 if (!response.ok) {
-                    alert('❌ Error downloading outstanding report: ' + response.statusText);
+                    alert('❌ Error downloading outstanding payments report: ' + response.statusText);
                     return;
-                }
-
+                }   
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-
                 const now = new Date();
                 const dateStr = now.toISOString().split('T')[0];
-                a.download = `outstanding_payments_${dateStr}.txt`;
-
+                a.download = `outstanding_payments_${dateStr}.zip`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
+                alert('✅ Outstanding payments report downloaded successfully! A ZIP file containing reports by area code is ready for printing.');
+                
 
-                alert('✅ Outstanding payments report downloaded successfully! Ready for printing.');
             } catch (error) {
                 console.error('Error:', error);
                 alert('❌ Error downloading report: ' + error.message);
